@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>甲午風雲｜iPad 教學地圖</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root{
+      --paper:#f6f1e7;
+      --paper-2:#fffaf0;
+      --ink:#17202a;
+      --muted:#67717c;
+      --line:#d6c9b6;
+      --qing:#314f68;
+      --japan:#b25b47;
+      --korea:#71805f;
+      --result:#956f3c;
+      --sea:#dfeaf0;
+      --shadow:0 22px 70px rgba(36,30,22,.13);
+      --radius:28px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;overflow:hidden;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 8% 6%,rgba(255,255,255,.95),transparent 34%),radial-gradient(circle at 86% 18%,rgba(221,232,237,.65),transparent 35%),linear-gradient(115deg,rgba(255,255,255,.45),transparent 45%);}
+    .app{position:relative;z-index:1;height:100vh;display:grid;grid-template-rows:auto 1fr auto;gap:16px;padding:22px 24px 20px;}
+    header{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:end;min-height:82px;}
+    .eyebrow{font-size:16px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px;}
+    h1{font-size:clamp(34px,4.2vw,56px);line-height:1.02;margin:0;font-weight:800;letter-spacing:-.045em;}
+    .stage-tabs{display:flex;background:rgba(255,250,240,.72);border:1px solid rgba(128,104,75,.2);border-radius:999px;padding:7px;box-shadow:0 10px 30px rgba(36,30,22,.06);}
+    .stage-tab{min-height:48px;padding:0 22px;border:0;border-radius:999px;background:transparent;color:#59626c;font-size:18px;font-weight:800;white-space:nowrap;}
+    .stage-tab.active{background:#17202a;color:#fffaf0;box-shadow:0 10px 22px rgba(23,32,42,.16);}
+    .main{min-height:0;display:grid;grid-template-columns:minmax(0,1.8fr) minmax(360px,.95fr);gap:18px;}
+    .map-card,.panel{background:rgba(255,250,240,.78);border:1px solid rgba(128,104,75,.2);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;position:relative;}
+    .map-card{display:grid;grid-template-rows:auto 1fr;}
+    .map-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:18px 20px 0;z-index:2;}
+    .map-title{display:flex;gap:12px;align-items:center;font-size:20px;font-weight:900;letter-spacing:-.02em;}
+    .scene-pill{font-size:15px;color:#fffaf0;background:#17202a;border-radius:999px;padding:8px 12px;font-weight:800;}
+    .legend{display:none;}
+    .filter-wrap{display:grid;gap:6px;justify-items:end;}
+    .filter-meta{font-size:12px;letter-spacing:.12em;color:#7b766d;font-weight:850;text-transform:uppercase;}
+    .filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+    .filter-btn{min-height:40px;padding:0 12px;border:1px solid rgba(128,104,75,.18);border-radius:999px;background:rgba(255,255,255,.68);color:#49535d;font-size:14px;font-weight:850;display:inline-flex;align-items:center;gap:7px;}
+    .filter-btn.active{background:#17202a;color:#fffaf0;border-color:#17202a;}
+    .filter-btn .dot{width:8px;height:8px;}
+    .legend span{display:inline-flex;align-items:center;gap:7px;font-size:15px;font-weight:800;color:#414b54;background:rgba(255,255,255,.6);border:1px solid rgba(128,104,75,.15);border-radius:999px;padding:8px 11px;}
+    .dot{width:10px;height:10px;border-radius:50%;display:inline-block}.dot.q{background:var(--qing)}.dot.j{background:var(--japan)}.dot.r{background:var(--result)}
+    #map{width:100%;height:100%;min-height:420px;background:#dfeaf0;}
+    .leaflet-container{font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;background:#dfeaf0;}
+    .leaflet-tile{filter:saturate(.82) contrast(.98) brightness(1.02);}
+    .leaflet-control-zoom{border:0!important;box-shadow:0 12px 30px rgba(23,32,42,.15)!important;}
+    .leaflet-control-zoom a{width:48px!important;height:48px!important;line-height:48px!important;font-size:26px!important;color:#17202a!important;background:#fffaf0!important;border-bottom:1px solid rgba(128,104,75,.18)!important;}
+    .leaflet-control-attribution{font-size:11px!important;background:rgba(255,250,240,.76)!important;color:#59626c!important;}
+    .map-label{display:flex;align-items:center;gap:6px;transform:translate(-2px,-8px);} .map-label.base{opacity:.92;transform:translate(-2px,-6px);} 
+    .map-label b{display:block;font-size:13px;line-height:1;font-weight:900;color:#17202a;background:rgba(255,250,240,.88);border:1px solid rgba(128,104,75,.16);border-radius:999px;padding:5px 8px;white-space:nowrap;box-shadow:0 5px 12px rgba(36,30,22,.08);} .map-label.base b{font-size:11px;font-weight:820;color:#4f5963;background:rgba(255,250,240,.72);border-color:rgba(128,104,75,.12);padding:4px 6px;box-shadow:none;}
+    .pin{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid rgba(255,250,240,.92);box-shadow:0 0 0 2px rgba(23,32,42,.07),0 4px 10px rgba(36,30,22,.15);} .map-label.base .pin{width:8px;height:8px;border-width:1px;box-shadow:none;background:#7f8b95!important;}
+    .map-label.qing .pin{background:var(--qing)}.map-label.japan .pin{background:var(--japan)}.map-label.korea .pin{background:var(--korea)}.map-label.result .pin{background:var(--result)}
+    .route-label{font-size:11px;font-weight:820;color:#17202a;background:rgba(255,250,240,.80);border:1px solid rgba(128,104,75,.14);border-radius:999px;padding:3px 6px;white-space:nowrap;box-shadow:0 4px 10px rgba(36,30,22,.07);max-width:120px;overflow:hidden;text-overflow:ellipsis;}
+    .route-arrow{position:relative;width:16px;height:16px;color:var(--qing);filter:drop-shadow(0 4px 8px rgba(36,30,22,.16));}.route-arrow:before{content:"";position:absolute;inset:0;clip-path:polygon(12% 50%, 100% 8%, 74% 50%, 100% 92%);background:currentColor}.route-arrow.qing{color:var(--qing)} .route-arrow.japan{color:var(--japan)} .route-arrow.result{color:var(--result)} .route-arrow.korea{color:var(--korea)}
+    .pulse-ring{border-radius:50%;border:3px solid currentColor;background:rgba(255,250,240,.08);opacity:.7;animation:pulseRing 1.8s ease-out infinite;}
+    @keyframes pulseRing{0%{transform:scale(.55);opacity:.75}100%{transform:scale(1.25);opacity:0}}
+    .map-credit{position:absolute;left:20px;bottom:16px;font-size:13px;color:#6f746f;background:rgba(255,250,240,.75);padding:7px 11px;border-radius:999px;border:1px solid rgba(128,104,75,.13);}
+    .panel{padding:24px 24px 20px;display:flex;flex-direction:column;gap:18px;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    .event-no{font-size:17px;color:var(--muted);font-weight:900;letter-spacing:.14em;text-transform:uppercase;}
+    .event-title{font-size:clamp(30px,3vw,42px);line-height:1.08;margin:0;font-weight:900;letter-spacing:-.05em;}
+    .date{font-size:20px;color:#805b34;font-weight:900;}
+    .text-block{display:grid;gap:12px;}
+    .text-block section{border-top:1px solid rgba(128,104,75,.18);padding-top:13px;}
+    .label{font-size:16px;color:#7c6850;font-weight:900;letter-spacing:.12em;margin-bottom:6px;}
+    .copy{font-size:clamp(20px,2vw,24px);line-height:1.55;margin:0;color:#26313a;font-weight:650;}
+    .link-yangwu{background:#f2e8d9;border:1px solid rgba(128,104,75,.18);border-radius:22px;padding:16px 17px;font-size:21px;line-height:1.48;font-weight:750;color:#2e3740;}
+    .demo-btn{display:none;width:100%;min-height:62px;border:0;border-radius:20px;background:#17202a;color:#fffaf0;font-size:21px;font-weight:900;box-shadow:0 16px 30px rgba(23,32,42,.18);margin-top:auto;}
+    .demo-btn.show{display:block}.demo-btn:active,.nav-btn:active,.stage-tab:active,.tl-node:active{transform:scale(.985)}
+    .timeline-wrap{background:rgba(255,250,240,.78);border:1px solid rgba(128,104,75,.2);border-radius:26px;box-shadow:0 16px 50px rgba(36,30,22,.10);padding:13px 14px;display:grid;grid-template-columns:auto auto 1fr auto;gap:12px;align-items:center;}
+    .auto-btn{min-width:110px;min-height:58px;border:1px solid rgba(128,104,75,.18);border-radius:18px;background:#17202a;color:#fffaf0;font-size:18px;font-weight:900;}
+    .nav-btn{min-width:98px;min-height:58px;border:1px solid rgba(128,104,75,.18);border-radius:18px;background:#fffaf0;color:#17202a;font-size:19px;font-weight:900;}
+    .timeline{display:grid;grid-template-columns:repeat(7,minmax(112px,1fr));gap:10px;min-width:0;}
+    .tl-node{min-height:64px;border:1px solid rgba(128,104,75,.18);border-radius:18px;background:rgba(255,255,255,.48);color:#313b44;padding:8px 10px;text-align:left;display:grid;align-content:center;gap:2px;}
+    .tl-node .num{font-size:13px;letter-spacing:.12em;color:#80694d;font-weight:900}.tl-node .name{font-size:18px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .tl-node.active{background:#17202a;color:#fffaf0;border-color:#17202a;box-shadow:0 12px 24px rgba(23,32,42,.16);}.tl-node.active .num{color:#e7d6bd}
+    .demo-overlay{position:fixed;z-index:30;inset:0;background:rgba(19,23,27,.44);backdrop-filter:blur(16px);display:grid;place-items:center;padding:24px;}
+    .demo-overlay.hidden{display:none}.demo-shell{width:min(1180px,96vw);height:min(760px,92vh);background:#f8f2e7;border:1px solid rgba(255,255,255,.55);border-radius:34px;box-shadow:0 40px 120px rgba(0,0,0,.35);display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;}
+    .demo-head{display:flex;justify-content:space-between;align-items:start;gap:18px;padding:22px 26px 12px;border-bottom:1px solid rgba(128,104,75,.16);}.demo-kicker{font-size:16px;color:#7c6850;font-weight:900;letter-spacing:.14em}.demo-title{font-size:38px;line-height:1.08;margin:3px 0 0;font-weight:950;letter-spacing:-.05em}.close-demo{min-width:54px;min-height:54px;border:0;border-radius:18px;background:#17202a;color:white;font-size:28px;font-weight:800;}
+    .demo-body{display:grid;grid-template-columns:1.35fr .9fr;gap:18px;min-height:0;padding:18px 24px;}
+    .sea-stage{position:relative;overflow:hidden;border-radius:28px;background:radial-gradient(circle at 50% 42%,rgba(255,255,255,.68),transparent 36%),radial-gradient(circle at 15% 18%,rgba(255,255,255,.45),transparent 22%),linear-gradient(150deg,#d8e5eb,#e5efee 48%,#ebe4d8);border:1px solid rgba(83,110,125,.18);box-shadow:inset 0 0 90px rgba(255,255,255,.4);transform:translateZ(0)}
+    .sea-stage:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(49,79,104,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(49,79,104,.06) 1px,transparent 1px);background-size:42px 42px;mask-image:radial-gradient(circle at 50% 45%,#000 45%,transparent 86%)}
+    .sea-stage:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 68% 48%,transparent 0,transparent 34%,rgba(255,255,255,.2) 50%,transparent 72%);mix-blend-mode:screen;pointer-events:none}
+    .coast{position:absolute;background:linear-gradient(180deg,rgba(193,180,152,.7),rgba(182,168,141,.45));border:1px solid rgba(128,104,75,.18);filter:drop-shadow(0 8px 16px rgba(36,30,22,.08))}.coast.korea{left:-40px;top:35px;width:170px;height:360px;border-radius:35% 55% 45% 35%;transform:rotate(-9deg)}.coast.china{left:-75px;bottom:-30px;width:250px;height:240px;border-radius:45% 60% 20% 30%}.coast.shandong{right:48px;top:70px;width:230px;height:130px;border-radius:70% 40% 55% 35%;transform:rotate(-7deg)}
+    #demoPorts,#demoFleet{position:absolute;inset:0}
+    .port-label{position:absolute;font-size:18px;font-weight:950;color:#30404b;background:rgba(255,250,240,.82);border:1px solid rgba(128,104,75,.16);border-radius:999px;padding:8px 11px;box-shadow:0 8px 18px rgba(36,30,22,.09);opacity:0;transform:translateY(8px);animation:labelIn .7s ease forwards;animation-delay:.15s}
+    .demo-svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+    .demo-svg path,.demo-svg circle{stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 6px 10px rgba(36,30,22,.08));opacity:0;stroke-dasharray:var(--demo-length);stroke-dashoffset:var(--demo-length);animation:demoStroke 1s cubic-bezier(.2,.8,.2,1) forwards}
+    .demo-svg text{opacity:0;animation:demoText .8s ease .35s forwards}
+    .ship{position:absolute;width:36px;height:15px;border-radius:55% 18% 18% 55%;transform-origin:center;box-shadow:0 8px 18px rgba(0,0,0,.16);transition:left .9s cubic-bezier(.22,.8,.2,1), top .9s cubic-bezier(.22,.8,.2,1), transform .9s cubic-bezier(.22,.8,.2,1), opacity .55s ease, filter .55s ease;background:var(--qing)}
+    .ship:before{content:"";position:absolute;left:2px;top:50%;width:10px;height:2px;background:rgba(255,255,255,.42);transform:translateY(-50%);border-radius:999px}
+    .ship:after{content:"";position:absolute;right:6px;top:3px;width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.55)}
+    .ship.qing{background:linear-gradient(90deg,#2f4c66,#476580)} .ship.japan{background:linear-gradient(90deg,#9e4f3d,#bc6953);width:32px;height:13px}
+    .ship.hidden,.ship-label.hidden{opacity:0;pointer-events:none}
+    .ship.dim{opacity:.36;filter:saturate(.55)}
+    .ship.hit{box-shadow:0 0 0 6px rgba(178,91,71,.18),0 10px 22px rgba(0,0,0,.18)}
+    .ship-label{position:absolute;transform:translate(-50%,-100%);font-size:17px;font-weight:950;color:#17202a;background:rgba(255,250,240,.88);border:1px solid rgba(128,104,75,.18);border-radius:999px;padding:7px 10px;white-space:nowrap;box-shadow:0 8px 18px rgba(36,30,22,.08);transition:left .9s cubic-bezier(.22,.8,.2,1), top .9s cubic-bezier(.22,.8,.2,1), opacity .55s ease, filter .55s ease}
+    .demo-info{display:flex;flex-direction:column;gap:16px;padding:4px 2px}.step-count{font-size:18px;color:#805b34;font-weight:950;letter-spacing:.12em}.step-title{font-size:34px;line-height:1.1;margin:0;font-weight:950;letter-spacing:-.04em}.step-copy{font-size:24px;line-height:1.52;margin:0;font-weight:720;color:#26313a}.step-meaning{border-top:1px solid rgba(128,104,75,.18);padding-top:14px;font-size:22px;line-height:1.48;color:#33404a;font-weight:760}.demo-controls{display:flex;gap:12px;padding:0 24px 22px;align-items:center}.demo-control{flex:1;min-height:60px;border:1px solid rgba(128,104,75,.18);border-radius:20px;background:#fffaf0;color:#17202a;font-size:20px;font-weight:950}.demo-control.primary{background:#17202a;color:#fffaf0;border-color:#17202a}.demo-control:disabled{opacity:.35}.demo-note{font-size:15px;color:#6c6b63;margin-left:4px}
+    @keyframes demoStroke{from{opacity:0;stroke-dashoffset:var(--demo-length)}to{opacity:1;stroke-dashoffset:0}}
+    @keyframes demoText{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+    .accordion-list{display:grid;gap:10px;margin-top:2px}
+    .info-accordion{border:1px solid rgba(128,104,75,.18);border-radius:18px;background:rgba(255,255,255,.45);overflow:hidden}
+    .info-accordion summary{min-height:54px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;cursor:pointer;font-size:19px;font-weight:950;color:#17202a;list-style:none;touch-action:manipulation}
+    .info-accordion summary::-webkit-details-marker{display:none}
+    .info-accordion summary:after{content:"＋";font-size:24px;color:#805b34;font-weight:900}
+    .info-accordion[open] summary:after{content:"−"}
+    .accordion-content{padding:0 16px 16px;font-size:21px;line-height:1.52;color:#26313a;font-weight:650}
+    .accordion-content ul{margin:8px 0 0;padding-left:1.2em}.accordion-content li{margin:6px 0}
+    .panel-note{font-size:15px;color:#746b5d;font-weight:750;line-height:1.35;margin-top:-4px}
+    .map-demo-bar{position:absolute;left:18px;right:18px;bottom:18px;z-index:1200;background:rgba(255,250,240,.92);border:1px solid rgba(128,104,75,.2);border-radius:24px;box-shadow:0 20px 60px rgba(36,30,22,.18);padding:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;backdrop-filter:blur(14px)}
+    .map-demo-bar.hidden{display:none}.demo-step-chip{font-size:16px;color:#805b34;font-weight:950;letter-spacing:.12em;white-space:nowrap}.map-demo-text h3{margin:0 0 4px;font-size:25px;line-height:1.12;font-weight:950;letter-spacing:-.035em}.map-demo-text p{margin:0;font-size:18px;line-height:1.38;font-weight:720;color:#33404a}.map-demo-progress{margin-top:9px;height:6px;background:rgba(128,104,75,.15);border-radius:999px;overflow:hidden}.map-demo-progress span{display:block;height:100%;width:20%;background:linear-gradient(90deg,#314f68,#b25b47);border-radius:999px;transition:width .45s ease}.map-demo-controls{display:flex;gap:8px}.map-demo-controls button{min-height:50px;border:1px solid rgba(128,104,75,.18);border-radius:16px;background:#fffaf0;color:#17202a;font-size:17px;font-weight:950;padding:0 14px}.map-demo-controls .primary{background:#17202a;color:#fffaf0;border-color:#17202a}.map-demo-controls button:disabled{opacity:.35}
+    .app.demo-map-mode{grid-template-rows:auto 1fr}.app.demo-map-mode .main{grid-template-columns:1fr}.app.demo-map-mode .panel,.app.demo-map-mode .timeline-wrap,.app.demo-map-mode .stage-tabs{display:none}.app.demo-map-mode .map-card{min-height:0}.app.demo-map-mode #map{min-height:620px}
+    .map-demo-caption{position:absolute;right:22px;top:78px;z-index:1000;background:rgba(23,32,42,.9);color:#fffaf0;border-radius:999px;padding:9px 13px;font-size:16px;font-weight:950;box-shadow:0 12px 28px rgba(23,32,42,.18)}
+    .focus-ring{border-radius:50%;border:3px solid currentColor;background:rgba(255,250,240,.12);box-shadow:0 0 0 8px rgba(255,255,255,.12);animation:focusPulse 2s ease-out infinite;}
+    @keyframes focusPulse{0%{transform:scale(.85);opacity:.85}100%{transform:scale(1.35);opacity:0}}
+    .map-demo-caption.hidden{display:none}
+
+    @media (orientation:portrait), (max-width:920px){body{overflow:auto}.app{height:auto;min-height:100vh;overflow:visible}.main{grid-template-columns:1fr}.panel{min-height:auto;max-height:none}.timeline-wrap{grid-template-columns:1fr}.timeline{display:flex;overflow:auto}.tl-node{min-width:150px}.nav-btn,.auto-btn{display:none}.demo-body{grid-template-columns:1fr}.demo-shell{height:auto;max-height:94vh;overflow:auto}.sea-stage{min-height:430px}}
+  
+
+    /* Editorial redesign layer: PEEL + Awwwards-inspired restraint */
+    :root{--paper:#f4efe5;--paper-2:#fffaf1;--ink:#121820;--muted:#69727a;--line:#ded4c6;--shadow:0 28px 90px rgba(31,27,21,.10);--radius:30px;}
+    body:before{background:radial-gradient(circle at 12% 10%,rgba(255,255,255,.9),transparent 28%),radial-gradient(circle at 78% 16%,rgba(202,218,224,.5),transparent 32%),linear-gradient(115deg,rgba(255,255,255,.34),transparent 44%);}
+    .app{gap:18px;padding:24px 28px 22px;}
+    header{min-height:90px;align-items:center;border-bottom:1px solid rgba(128,104,75,.13);padding-bottom:10px;}
+    .eyebrow{font-size:13px;letter-spacing:.22em;color:#847d70;font-weight:850;}
+    h1{font-size:clamp(38px,4.5vw,62px);letter-spacing:-.06em;font-weight:900;}
+    .stage-tabs{background:rgba(255,250,241,.56);border-color:rgba(128,104,75,.14);box-shadow:none;padding:5px;}
+    .stage-tab{min-height:44px;font-size:16px;padding:0 18px;transition:background .3s ease,color .3s ease,transform .2s ease;}
+    .stage-tab.active{background:#121820;box-shadow:0 12px 26px rgba(18,24,32,.14);}
+    .map-card,.panel,.timeline-wrap{background:rgba(255,250,241,.70);border-color:rgba(128,104,75,.15);box-shadow:var(--shadow);}
+    .map-card{border-radius:32px;}
+    .map-top{padding:20px 22px 0;}
+    .map-title{font-size:18px;letter-spacing:-.015em;}
+    .scene-pill{font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:#121820;padding:8px 11px;}
+    .filter-wrap{gap:7px;}
+    .filter-meta{font-size:11px;color:#8c8375;}
+    .filter-btn{min-height:36px;padding:0 11px;font-size:13px;font-weight:820;background:rgba(255,255,255,.45);border-color:rgba(128,104,75,.14);box-shadow:none;transition:all .25s ease;}
+    .filter-btn.active{background:#121820;color:#fffaf1;}
+    .leaflet-tile{filter:saturate(.72) contrast(.96) brightness(1.04);}
+    .map-label b{font-size:12px;padding:4px 7px;box-shadow:none;background:rgba(255,250,241,.80);}
+    .map-label.base b{font-size:10.5px;color:#5d6670;background:rgba(255,250,241,.62);}
+    .route-label{opacity:.72;}
+
+    .leaflet-overlay-pane path.route-main{filter:drop-shadow(0 6px 12px rgba(31,27,21,.08));}
+    .leaflet-overlay-pane path.route-flow{mix-blend-mode:screen;}
+    .clash-pulse{border-radius:50%;border:2px solid currentColor;background:rgba(255,250,241,.10);box-shadow:0 0 0 8px rgba(255,255,255,.10);animation:clashPulse 1.35s ease-out 3;}
+    @keyframes clashPulse{0%{transform:scale(.5);opacity:.88}100%{transform:scale(1.45);opacity:0}}
+    .panel{border-radius:32px;padding:0;gap:0;overflow:hidden;}
+    .panel-inner{padding:24px 24px 20px;display:flex;flex-direction:column;gap:18px;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+    .panel-header{position:relative;padding-bottom:18px;border-bottom:1px solid rgba(128,104,75,.14);}
+    .panel-header:after{content:"1894";position:absolute;right:0;top:-10px;font-size:62px;font-weight:950;letter-spacing:-.08em;color:rgba(128,104,75,.075);line-height:1;pointer-events:none;}
+    .event-no{font-size:13px;letter-spacing:.18em;color:#8b8173;}
+    .event-title{font-size:clamp(32px,3vw,46px);letter-spacing:-.065em;}
+    .date{font-size:17px;color:#8a6339;}
+    .text-block section{border-top:0;padding-top:0;}
+    .label{font-size:12px;letter-spacing:.16em;color:#8c7457;margin-bottom:10px;}
+    .copy{font-size:clamp(20px,1.75vw,23px);line-height:1.62;font-weight:620;color:#1d2832;}
+    .panel-note{font-size:13px;color:#81796f;border-left:2px solid rgba(128,104,75,.22);padding-left:10px;}
+    .accordion-list{gap:9px;}
+    .info-accordion{background:rgba(255,255,255,.34);border-color:rgba(128,104,75,.13);border-radius:16px;transition:background .25s ease,border .25s ease;}
+    .info-accordion[open]{background:rgba(255,252,246,.70);border-color:rgba(128,104,75,.22);}
+    .info-accordion summary{min-height:52px;font-size:17px;font-weight:880;padding:0 15px;}
+    .accordion-content{font-size:18px;line-height:1.62;font-weight:560;color:#26313a;padding:0 15px 16px;}
+    .accordion-content ul{margin:8px 0 0;padding-left:1.1em;}
+    .accordion-content li{margin:7px 0;}
+    .peel-wrap{display:grid;gap:8px;margin-top:4px;}
+    .peel-row{display:grid;grid-template-columns:34px 1fr;gap:13px;align-items:start;padding:13px 0;border-top:1px solid rgba(128,104,75,.12);}
+    .peel-row:first-child{border-top:0;padding-top:4px;}
+    .peel-letter{height:30px;width:30px;border-radius:50%;display:grid;place-items:center;background:#121820;color:#fffaf1;font-size:13px;font-weight:950;letter-spacing:.02em;}
+    .peel-row:nth-child(2) .peel-letter,.peel-row:nth-child(3) .peel-letter{background:#8d6940;}
+    .peel-row:nth-child(4) .peel-letter{background:#b25b47;}
+    .peel-label{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#8c7457;font-weight:900;margin-bottom:4px;}
+    .peel-text{font-size:17px;line-height:1.66;color:#23303a;font-weight:560;}
+    .demo-btn{margin-top:4px;min-height:58px;border-radius:18px;background:#121820;box-shadow:none;font-size:18px;transition:transform .2s ease,background .2s ease;}
+    .timeline-wrap{border-radius:28px;padding:12px;}
+    .auto-btn,.nav-btn{min-height:54px;border-radius:16px;box-shadow:none;font-size:17px;}
+    .auto-btn{background:#121820;}
+    .timeline{gap:8px;position:relative;}
+    .tl-node{min-height:58px;border-radius:16px;background:rgba(255,255,255,.38);border-color:rgba(128,104,75,.13);transition:all .25s ease;}
+    .tl-node .num{font-size:11px;color:#90775a;}
+    .tl-node .name{font-size:16px;}
+    .tl-node.active{background:#121820;border-color:#121820;box-shadow:0 14px 28px rgba(18,24,32,.14);transform:translateY(-1px);}
+    .map-demo-bar{border-radius:22px;background:rgba(255,250,241,.90);}
+    .map-demo-text h3{font-size:23px;}
+    .map-demo-text p{font-size:17px;}
+    .map-demo-controls button{font-size:16px;border-radius:14px;}
+    @media (orientation:portrait), (max-width:920px){.panel-inner{overflow:visible}.panel-header:after{display:none}}
+
+
+    /* Vintage Interactive Atlas refinements */
+    .map-card{isolation:isolate;}
+    .map-card::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:900;background:
+      radial-gradient(circle at 50% 46%,transparent 45%,rgba(86,65,38,.10) 100%),
+      linear-gradient(90deg,rgba(114,83,45,.045) 1px,transparent 1px),
+      linear-gradient(rgba(114,83,45,.04) 1px,transparent 1px);
+      background-size:auto, 36px 36px, 36px 36px;mix-blend-mode:multiply;opacity:.55;}
+    .map-card::before{content:"";position:absolute;inset:0;z-index:899;pointer-events:none;background:
+      radial-gradient(circle at 18% 20%,rgba(255,255,255,.18),transparent 26%),
+      radial-gradient(circle at 75% 30%,rgba(255,255,255,.12),transparent 22%),
+      linear-gradient(120deg,rgba(255,247,229,.12),rgba(164,139,100,.07));}
+    .map-top,.map-credit,.map-demo-caption,.map-demo-bar{z-index:1001;}
+    #map{filter:sepia(.10) saturate(.86) contrast(.98) brightness(1.02);} 
+    .leaflet-tile{filter:saturate(.70) contrast(.96) brightness(1.04) sepia(.12)!important;}
+    .panel-toggle{position:absolute;top:16px;right:16px;z-index:5;min-width:46px;height:46px;border:1px solid rgba(128,104,75,.18);border-radius:999px;background:rgba(255,250,241,.88);color:#17202a;font-size:15px;font-weight:900;box-shadow:0 10px 24px rgba(36,30,22,.10);}
+    .panel-toggle::before{content:"收合";}
+    .app.drawer-collapsed .main{grid-template-columns:minmax(0,1fr) 72px;}
+    .app.drawer-collapsed .panel{padding:0;overflow:visible;background:rgba(255,250,241,.48);}
+    .app.drawer-collapsed .panel-inner{opacity:0;pointer-events:none;visibility:hidden;}
+    .app.drawer-collapsed .panel-toggle{left:12px;right:auto;writing-mode:vertical-rl;height:auto;min-height:130px;padding:14px 10px;border-radius:999px;}
+    .app.drawer-collapsed .panel-toggle::before{content:"打開筆記";}
+    .timeline{position:relative;}
+    .timeline::before{content:"";position:absolute;left:20px;right:20px;top:50%;height:1px;background:linear-gradient(90deg,rgba(49,79,104,.18),rgba(178,91,71,.28),rgba(149,111,60,.20));z-index:0;}
+    .tl-node{position:relative;z-index:1;backdrop-filter:blur(10px);}
+    .tl-node::after{content:"";position:absolute;left:12px;right:12px;bottom:7px;height:2px;background:rgba(128,104,75,.14);border-radius:999px;}
+    .tl-node.active::after{background:linear-gradient(90deg,#e7d6bd,#b25b47);}
+    .intro-overlay{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 50% 42%,rgba(255,250,241,.92),rgba(235,225,208,.96) 56%,rgba(203,188,163,.98));display:grid;place-items:center;padding:30px;transition:opacity .7s ease,visibility .7s ease;}
+    .intro-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none;display:none!important;}
+    .intro-card{width:min(920px,92vw);border:1px solid rgba(128,104,75,.20);border-radius:34px;background:rgba(255,250,241,.58);box-shadow:0 34px 110px rgba(36,30,22,.18);padding:42px 46px;text-align:center;position:relative;overflow:hidden;}
+    .intro-card::before{content:"1894";position:absolute;left:50%;top:50%;transform:translate(-50%,-48%);font-size:min(26vw,260px);font-weight:950;letter-spacing:-.08em;color:rgba(128,104,75,.075);line-height:1;}
+    .intro-kicker{position:relative;font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:#80694d;font-weight:900;margin-bottom:10px;}
+    .intro-title{position:relative;font-size:clamp(42px,6vw,76px);line-height:.98;letter-spacing:-.065em;font-weight:950;margin:0 0 14px;}
+    .intro-copy{position:relative;font-size:20px;line-height:1.6;color:#33404a;font-weight:650;margin:0 auto 28px;max-width:660px;}
+    .intro-btn{position:relative;min-height:56px;padding:0 24px;border:0;border-radius:999px;background:#121820;color:#fffaf1;font-size:18px;font-weight:900;box-shadow:0 16px 34px rgba(18,24,32,.18);}
+    .cause-tag{font-size:13px;font-weight:900;color:#17202a;background:rgba(255,250,241,.88);border:1px solid rgba(128,104,75,.18);border-radius:999px;padding:7px 10px;box-shadow:0 10px 24px rgba(36,30,22,.11);white-space:nowrap;}
+    .cause-tag::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#b25b47;margin-right:7px;}
+    .result-map-note{font-size:12px;font-weight:850;color:#7b766d;background:rgba(255,250,241,.78);border:1px solid rgba(128,104,75,.14);border-radius:999px;padding:5px 8px;white-space:nowrap;}
+    @media (orientation:portrait), (max-width:920px){.panel-toggle{display:none}.app.drawer-collapsed .main{grid-template-columns:1fr}.intro-card{padding:32px 26px}.intro-title{font-size:42px}}
+
+
+    /* Exhibition-grade polish layer */
+    :root{
+      --museum-black:#10151c;
+      --museum-red:#a85142;
+      --museum-gold:#9b7445;
+      --vellum:#fbf5e9;
+      --glass:rgba(255,250,241,.62);
+    }
+    body{
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.46),transparent 34%),
+        radial-gradient(circle at 82% 10%,rgba(151,180,190,.22),transparent 30%),
+        radial-gradient(circle at 12% 94%,rgba(152,102,63,.16),transparent 30%),
+        var(--paper);
+    }
+    body:after{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      z-index:0;
+      opacity:.18;
+      background-image:
+        linear-gradient(rgba(18,24,32,.08) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(18,24,32,.06) 1px,transparent 1px);
+      background-size:72px 72px;
+      mask-image:linear-gradient(to bottom,transparent,#000 18%,#000 82%,transparent);
+    }
+    .app{
+      grid-template-rows:auto minmax(0,1fr) auto;
+      gap:14px;
+      padding:18px 20px 18px;
+    }
+    header{
+      min-height:68px;
+      padding:0 2px 10px;
+      border-bottom:1px solid rgba(18,24,32,.10);
+      grid-template-columns:minmax(0,1fr) auto;
+    }
+    .eyebrow{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      font-size:11px;
+      color:#7d7468;
+    }
+    .eyebrow:before{
+      content:"";
+      width:34px;
+      height:1px;
+      background:linear-gradient(90deg,var(--museum-red),rgba(155,116,69,.18));
+    }
+    h1{
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:clamp(34px,4vw,58px);
+      letter-spacing:-.055em;
+    }
+    .header-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .stage-tabs{
+      border-radius:12px;
+      padding:4px;
+      background:rgba(255,250,241,.48);
+      backdrop-filter:blur(18px);
+    }
+    .stage-tab{
+      border-radius:9px;
+      min-height:38px;
+      font-size:14px;
+      letter-spacing:.03em;
+    }
+    .analysis-tab{
+      min-height:46px;
+      padding:0 15px;
+      border:1px solid rgba(168,81,66,.22);
+      border-radius:12px;
+      background:rgba(255,250,241,.62);
+      color:#6f3f35;
+      font-size:14px;
+      font-weight:900;
+      letter-spacing:.06em;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.45);
+      backdrop-filter:blur(18px);
+      white-space:nowrap;
+    }
+    .analysis-tab.active{
+      background:#6f3f35;
+      color:#fffaf1;
+      border-color:#6f3f35;
+      box-shadow:0 14px 28px rgba(111,63,53,.16);
+    }
+    .main{
+      grid-template-columns:minmax(0,2.35fr) minmax(330px,.72fr);
+      gap:14px;
+    }
+    .map-card,.panel,.timeline-wrap{
+      border-color:rgba(18,24,32,.10);
+      box-shadow:0 22px 80px rgba(18,24,32,.10), inset 0 1px 0 rgba(255,255,255,.45);
+    }
+    .map-card{
+      border-radius:22px;
+      background:rgba(248,242,230,.72);
+    }
+    .map-card::after{
+      opacity:.72;
+      background:
+        radial-gradient(circle at 50% 44%,transparent 42%,rgba(47,35,20,.16) 100%),
+        repeating-linear-gradient(0deg,rgba(64,45,27,.035) 0 1px,transparent 1px 5px),
+        linear-gradient(90deg,rgba(114,83,45,.04) 1px,transparent 1px),
+        linear-gradient(rgba(114,83,45,.035) 1px,transparent 1px);
+      background-size:auto,auto,40px 40px,40px 40px;
+    }
+    .map-top{
+      align-items:center;
+      padding:16px 18px 0;
+    }
+    .map-title{
+      flex:1 1 360px;
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:clamp(18px,1.7vw,27px);
+      line-height:1.18;
+    }
+    .scene-pill{
+      border-radius:8px;
+      background:var(--museum-black);
+      font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
+      font-size:11px;
+      letter-spacing:.18em;
+      box-shadow:0 14px 30px rgba(18,24,32,.16);
+    }
+    .filter-wrap{
+      background:rgba(255,250,241,.54);
+      border:1px solid rgba(18,24,32,.08);
+      border-radius:14px;
+      padding:9px;
+      backdrop-filter:blur(18px);
+    }
+    .filter-meta{
+      font-size:10px;
+      color:#71685d;
+    }
+    .filter-btn{
+      border-radius:10px;
+      min-height:34px;
+      background:rgba(255,255,255,.36);
+    }
+    .filter-btn.active{
+      background:var(--museum-black);
+    }
+    #map{
+      min-height:520px;
+    }
+    .map-credit{
+      left:18px;
+      bottom:16px;
+      border-radius:10px;
+      font-size:11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .leaflet-control-zoom a{
+      width:40px!important;
+      height:40px!important;
+      line-height:40px!important;
+      font-size:22px!important;
+    }
+    .map-label b,.route-label,.cause-tag,.result-map-note{
+      border-radius:8px;
+      backdrop-filter:blur(12px);
+    }
+    .route-label{
+      font-size:10px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .leaflet-overlay-pane path.route-main.run{
+      stroke-dasharray:var(--route-length);
+      stroke-dashoffset:var(--route-length);
+      animation:routeDraw 1.1s cubic-bezier(.16,.84,.28,1) forwards;
+    }
+    .leaflet-overlay-pane path.route-flow.run{
+      animation:routeFlow 1.8s linear infinite;
+    }
+    @keyframes routeDraw{to{stroke-dashoffset:0}}
+    @keyframes routeFlow{to{stroke-dashoffset:-64}}
+    .leaflet-overlay-pane path.route-main.route-attack{stroke-linecap:butt;}
+    .leaflet-overlay-pane path.route-main.route-retreat{stroke-dasharray:8 12!important;opacity:.54;}
+    .leaflet-overlay-pane path.route-main.route-blockade{stroke-dasharray:2 9!important;}
+    .leaflet-overlay-pane path.route-main.route-result{stroke-dasharray:4 12!important;}
+    .route-label{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      max-width:150px;
+    }
+    .route-label:before{
+      content:"";
+      width:16px;
+      height:2px;
+      border-radius:999px;
+      background:currentColor;
+      opacity:.65;
+    }
+    .route-label.clash:before{
+      width:12px;
+      height:12px;
+      border:2px solid currentColor;
+      background:transparent;
+      border-radius:50%;
+    }
+    .route-label.retreat{opacity:.58;}
+    .route-label.blockade:before{
+      width:14px;
+      height:8px;
+      border:2px solid currentColor;
+      border-bottom:0;
+      background:transparent;
+      border-radius:999px 999px 0 0;
+    }
+    .event-glyph{
+      display:grid;
+      place-items:center;
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      border:1px solid rgba(255,250,241,.82);
+      color:#fffaf1;
+      background:#10151c;
+      box-shadow:0 14px 28px rgba(18,24,32,.20);
+      font-size:16px;
+      font-weight:950;
+      backdrop-filter:blur(12px);
+    }
+    .event-glyph.clash{
+      background:#9c4b3e;
+      animation:glyphBeat 1.6s ease-out infinite;
+    }
+    .event-glyph.retreat{background:#314f68;opacity:.68;}
+    .event-glyph.blockade{background:#8b6536;}
+    .event-glyph.result{background:#956f3c;}
+    @keyframes glyphBeat{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+    .battle-zone{
+      position:relative;
+      width:92px;
+      height:92px;
+      border-radius:50%;
+      border:1px solid rgba(168,81,66,.45);
+      background:radial-gradient(circle,rgba(168,81,66,.20),rgba(168,81,66,.08) 38%,transparent 62%);
+      box-shadow:0 0 0 10px rgba(168,81,66,.05);
+      animation:battleZone 2.1s ease-out infinite;
+    }
+    .battle-zone:before,.battle-zone:after{
+      content:"";
+      position:absolute;
+      left:18px;
+      right:18px;
+      top:50%;
+      height:2px;
+      background:#9c4b3e;
+      transform:rotate(35deg);
+      border-radius:999px;
+    }
+    .battle-zone:after{transform:rotate(-35deg);}
+    @keyframes battleZone{0%{transform:scale(.92);opacity:.92}100%{transform:scale(1.08);opacity:.45}}
+    .blockade-zone{
+      width:132px;
+      height:82px;
+      border:3px dashed rgba(139,101,54,.72);
+      border-bottom-color:transparent;
+      border-radius:999px 999px 16px 16px;
+      background:linear-gradient(180deg,rgba(139,101,54,.08),transparent);
+      filter:drop-shadow(0 10px 18px rgba(36,30,22,.12));
+    }
+    .pressure-note{
+      font-size:12px;
+      font-weight:950;
+      letter-spacing:.08em;
+      color:#fffaf1;
+      background:#10151c;
+      border-radius:8px;
+      padding:7px 9px;
+      box-shadow:0 14px 28px rgba(18,24,32,.18);
+      white-space:nowrap;
+    }
+
+    .panel{
+      border-radius:22px;
+      background:rgba(255,250,241,.58);
+      backdrop-filter:blur(24px);
+    }
+    .panel::before{
+      content:"CURATOR NOTES";
+      position:absolute;
+      left:18px;
+      bottom:18px;
+      writing-mode:vertical-rl;
+      font-size:10px;
+      font-weight:950;
+      letter-spacing:.22em;
+      color:rgba(18,24,32,.18);
+      pointer-events:none;
+    }
+    .panel-inner{
+      padding:22px 22px 20px 34px;
+      gap:15px;
+    }
+    .panel-header{
+      padding-bottom:16px;
+    }
+    .panel-header:after{
+      font-family:"Noto Serif TC","Songti TC",serif;
+      font-size:76px;
+      color:rgba(168,81,66,.075);
+    }
+    .event-title{
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:clamp(28px,2.55vw,41px);
+      letter-spacing:-.045em;
+    }
+    .event-thesis{
+      position:relative;
+      margin-top:14px;
+      padding:14px 0 0 18px;
+      font-size:18px;
+      line-height:1.54;
+      color:#1e2a33;
+      font-weight:760;
+    }
+    .event-thesis:before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:16px;
+      bottom:3px;
+      width:3px;
+      border-radius:999px;
+      background:linear-gradient(var(--museum-red),var(--museum-gold));
+    }
+    .label{
+      font-size:10px;
+      letter-spacing:.22em;
+      color:#8b6d4c;
+    }
+    .copy{
+      font-size:clamp(17px,1.45vw,20px);
+      line-height:1.72;
+      color:#25303a;
+    }
+    .info-accordion{
+      border-radius:12px;
+      background:rgba(255,255,255,.28);
+    }
+    .info-accordion summary{
+      min-height:48px;
+      font-size:15px;
+    }
+    .accordion-content{
+      font-size:16px;
+    }
+    .demo-btn{
+      border-radius:12px;
+      background:linear-gradient(135deg,var(--museum-black),#243241);
+    }
+    .timeline-wrap{
+      position:relative;
+      grid-template-columns:auto auto minmax(0,1fr) auto;
+      border-radius:18px;
+      padding:10px;
+      background:rgba(255,250,241,.56);
+      backdrop-filter:blur(24px);
+    }
+    .timeline-progress{
+      position:absolute;
+      left:18px;
+      right:18px;
+      top:-5px;
+      height:3px;
+      background:rgba(18,24,32,.10);
+      border-radius:999px;
+      overflow:hidden;
+    }
+    .timeline-progress span{
+      display:block;
+      width:12.5%;
+      height:100%;
+      background:linear-gradient(90deg,var(--qing),var(--museum-red),var(--museum-gold));
+      border-radius:999px;
+      transition:width .65s cubic-bezier(.16,.84,.28,1);
+    }
+    .auto-btn,.nav-btn{
+      min-height:46px;
+      border-radius:12px;
+      font-size:14px;
+    }
+    .timeline{
+      grid-template-columns:repeat(7,minmax(96px,1fr));
+      gap:6px;
+    }
+    .timeline::before{
+      left:10px;
+      right:10px;
+      opacity:.65;
+    }
+    .tl-node{
+      min-height:50px;
+      border-radius:12px;
+      padding:7px 9px;
+      background:rgba(255,255,255,.26);
+    }
+    .tl-node .num{
+      font-size:10px;
+      letter-spacing:.18em;
+    }
+    .tl-node .name{
+      font-size:14px;
+    }
+    .tl-node.active{
+      background:var(--museum-black);
+      transform:translateY(-2px);
+    }
+    .intro-overlay{
+      background:
+        radial-gradient(circle at 50% 44%,rgba(255,250,241,.94),rgba(232,222,203,.96) 54%,rgba(173,151,117,.98)),
+        linear-gradient(115deg,rgba(255,255,255,.18),transparent);
+    }
+    .intro-card{
+      width:min(980px,92vw);
+      border-radius:24px;
+      padding:50px 52px;
+      background:rgba(255,250,241,.46);
+      backdrop-filter:blur(18px);
+    }
+    .intro-card::after{
+      content:"";
+      position:absolute;
+      left:50%;
+      bottom:30px;
+      width:min(520px,70%);
+      height:1px;
+      transform:translateX(-50%);
+      background:linear-gradient(90deg,transparent,var(--museum-red),var(--museum-gold),transparent);
+      opacity:.55;
+    }
+    .intro-title{
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:clamp(54px,7.2vw,104px);
+      letter-spacing:-.075em;
+    }
+    .intro-btn{
+      border-radius:12px;
+      background:var(--museum-black);
+    }
+    .app[data-scene="war"] .scene-pill,.app[data-scene="war"] .stage-tab.active{background:#8f473b;}
+    .app[data-scene="result"] .scene-pill,.app[data-scene="result"] .stage-tab.active{background:#8b6536;}
+    .app.analysis-mode .scene-pill{background:#6f3f35;}
+    .app[data-scene="result"] .event-thesis:before{background:linear-gradient(#8b6536,#a85142);}
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important;}
+    }
+
+    /* DSE focus + restrained motion pass */
+    body:before{
+      animation:ambientPaper 18s ease-in-out infinite alternate;
+      will-change:opacity,transform;
+    }
+    @keyframes ambientPaper{
+      from{opacity:.86;transform:translate3d(-6px,-4px,0) scale(1.01)}
+      to{opacity:1;transform:translate3d(7px,5px,0) scale(1.025)}
+    }
+    .map-card,.panel,.timeline-wrap,.stage-tabs,.analysis-tab{
+      transition:box-shadow .45s ease,border-color .45s ease,background .45s ease,transform .45s cubic-bezier(.16,.84,.28,1);
+    }
+    .map-loading,.schematic-map{
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+    }
+    .map-loading{
+      z-index:1002;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,rgba(251,245,233,.86),rgba(223,234,240,.78));
+      color:#33404a;
+      font-size:14px;
+      font-weight:850;
+      letter-spacing:.08em;
+      transition:opacity .45s ease,visibility .45s ease;
+    }
+    .map-loading.hidden{
+      opacity:0;
+      visibility:hidden;
+    }
+    .map-loading span{
+      border:1px solid rgba(128,104,75,.16);
+      background:rgba(255,250,241,.74);
+      border-radius:999px;
+      padding:10px 14px;
+      box-shadow:0 16px 36px rgba(18,24,32,.10);
+      backdrop-filter:blur(14px);
+    }
+    .schematic-map{
+      z-index:345;
+      opacity:0;
+      visibility:hidden;
+      transition:opacity .6s ease,visibility .6s ease;
+      background:
+        radial-gradient(circle at 42% 48%,rgba(49,79,104,.10),transparent 28%),
+        linear-gradient(145deg,rgba(225,235,238,.82),rgba(246,239,225,.88));
+    }
+    .map-card.fallback-active .schematic-map{
+      opacity:1;
+      visibility:visible;
+    }
+    .map-card.fallback-active .leaflet-tile-pane{
+      opacity:.12;
+    }
+    .schematic-map svg{
+      width:100%;
+      height:100%;
+      display:block;
+    }
+    .schematic-land{
+      fill:rgba(174,158,130,.48);
+      stroke:rgba(110,86,53,.22);
+      stroke-width:1.5;
+    }
+    .schematic-sea-label,.schematic-place{
+      font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
+      font-weight:850;
+      fill:rgba(31,42,51,.55);
+      letter-spacing:.04em;
+    }
+    .schematic-sea-label{font-size:18px;}
+    .schematic-place{font-size:13px;}
+    .schematic-dot{
+      fill:#10151c;
+      opacity:.72;
+    }
+    .map-status-note{
+      position:absolute;
+      left:18px;
+      top:72px;
+      z-index:1001;
+      max-width:min(420px,calc(100% - 36px));
+      display:none;
+      border:1px solid rgba(128,104,75,.16);
+      border-radius:12px;
+      background:rgba(255,250,241,.88);
+      color:#33404a;
+      padding:9px 11px;
+      font-size:12px;
+      line-height:1.45;
+      font-weight:750;
+      backdrop-filter:blur(14px);
+      box-shadow:0 14px 34px rgba(18,24,32,.12);
+    }
+    .map-card.fallback-active .map-status-note{
+      display:block;
+    }
+    .map-card:hover,.panel:hover{
+      border-color:rgba(18,24,32,.15);
+      box-shadow:0 28px 90px rgba(18,24,32,.13), inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    button{
+      cursor:pointer;
+      transition:transform .28s cubic-bezier(.16,.84,.28,1),box-shadow .28s ease,background .28s ease,border-color .28s ease,color .28s ease,opacity .28s ease;
+    }
+    button:hover{
+      transform:translateY(-1px);
+    }
+    .filter-btn:hover,.tl-node:hover,.stage-tab:hover,.analysis-tab:hover,.info-accordion summary:hover{
+      box-shadow:0 10px 24px rgba(18,24,32,.09);
+    }
+    .panel-inner.motion-in .panel-header,
+    .panel-inner.motion-in .text-block,
+    .panel-inner.motion-in .study-cue,
+    .panel-inner.motion-in .demo-btn,
+    .panel-inner.motion-in .accordion-list{
+      animation:contentSettle .52s cubic-bezier(.16,.84,.28,1) both;
+    }
+    .panel-inner.motion-in .text-block{animation-delay:.035s}
+    .panel-inner.motion-in .study-cue{animation-delay:.07s}
+    .panel-inner.motion-in .demo-btn{animation-delay:.105s}
+    .panel-inner.motion-in .accordion-list{animation-delay:.14s}
+    @keyframes contentSettle{
+      from{opacity:0;transform:translateY(8px);filter:blur(2px)}
+      to{opacity:1;transform:translateY(0);filter:blur(0)}
+    }
+    .copy{
+      font-size:clamp(16px,1.28vw,18px);
+      line-height:1.68;
+      font-weight:590;
+    }
+    .event-thesis{
+      font-size:16px;
+      line-height:1.5;
+    }
+    .accordion-content{
+      font-size:15px;
+      line-height:1.62;
+    }
+    .info-accordion summary{
+      font-size:14px;
+    }
+    .event-title{
+      font-size:clamp(27px,2.35vw,38px);
+    }
+    .map-title{
+      font-size:clamp(17px,1.45vw,23px);
+    }
+    .route-label{
+      font-size:9.5px;
+      opacity:.84;
+    }
+    .event-glyph{
+      width:30px;
+      height:30px;
+      font-size:14px;
+      box-shadow:0 10px 22px rgba(18,24,32,.16);
+    }
+    .battle-zone{
+      width:76px;
+      height:76px;
+    }
+    .blockade-zone{
+      width:116px;
+      height:70px;
+    }
+    .pressure-note{
+      font-size:11px;
+      padding:6px 8px;
+    }
+    @media (prefers-reduced-motion:reduce){
+      body:before{animation:none!important;}
+    }
+    /* Spacious teaching-tool layout pass */
+    .main{
+      grid-template-columns:minmax(0,2.8fr) minmax(300px,.64fr);
+    }
+    .panel{
+      background:rgba(255,250,241,.50);
+    }
+    .panel-inner{
+      padding:22px 20px 18px 30px;
+      gap:13px;
+    }
+    .panel-header{
+      padding-bottom:18px;
+    }
+    .event-no{
+      font-size:11px;
+    }
+    .date{
+      font-size:15px;
+    }
+    .event-thesis{
+      margin-top:12px;
+      padding-top:12px;
+    }
+    .text-block{
+      gap:8px;
+    }
+    .panel-section-label{
+      font-size:11px;
+      letter-spacing:.16em;
+      color:#8b6d4c;
+      font-weight:950;
+      text-transform:uppercase;
+      margin-bottom:7px;
+    }
+    .supplement-block{
+      display:grid;
+      gap:8px;
+    }
+    .copy span{
+      display:block;
+    }
+    .copy span + span{
+      margin-top:8px;
+    }
+    .info-accordion{
+      border-color:rgba(128,104,75,.10);
+      background:rgba(255,255,255,.22);
+    }
+    .info-accordion summary{
+      min-height:43px;
+      padding:0 13px;
+      color:#202a33;
+    }
+    .accordion-content{
+      padding:0 13px 14px;
+    }
+    .timeline-wrap{
+      padding:8px 10px;
+      gap:8px;
+      background:rgba(255,250,241,.46);
+    }
+    .auto-btn,.nav-btn{
+      min-height:40px;
+      min-width:74px;
+      font-size:13px;
+    }
+    .timeline{
+      grid-template-columns:repeat(7,minmax(70px,1fr));
+      gap:5px;
+    }
+    .tl-node{
+      min-height:42px;
+      padding:6px 8px;
+      align-content:center;
+      background:rgba(255,255,255,.20);
+    }
+    .tl-node .num{
+      font-size:9px;
+    }
+    .tl-node .name{
+      font-size:13px;
+      letter-spacing:.02em;
+    }
+    .tl-node:not(.active){
+      opacity:.72;
+    }
+    .tl-node:hover{
+      opacity:1;
+    }
+    .app.analysis-mode .panel{
+      background:rgba(255,250,241,.58);
+    }
+    .app.analysis-mode .analysis-workbench{
+      grid-template-columns:minmax(190px,.34fr) minmax(0,1fr);
+      gap:18px;
+    }
+    .reason-list{
+      padding:6px;
+    }
+    .answer-guide{
+      grid-column:1 / -1;
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      margin-bottom:2px;
+    }
+    .answer-guide div{
+      border:1px solid rgba(128,104,75,.12);
+      border-radius:12px;
+      background:rgba(255,255,255,.24);
+      padding:10px 12px;
+      color:#33404a;
+      font-size:13px;
+      line-height:1.45;
+      font-weight:680;
+    }
+    .answer-guide b{
+      display:block;
+      color:#8b4a3e;
+      font-size:11px;
+      letter-spacing:.14em;
+      margin-bottom:3px;
+    }
+    .reason-card{
+      min-height:62px;
+      padding:10px 12px;
+    }
+    .reason-card .reason-title{
+      font-size:16px;
+    }
+    .reason-detail{
+      padding:26px 30px;
+    }
+    .analysis-peel{
+      gap:4px;
+    }
+    .analysis-peel-row{
+      grid-template-columns:38px 1fr;
+      padding:16px 0;
+    }
+    .analysis-peel-row.link-row{
+      margin-top:8px;
+      padding:17px 18px;
+      border:0;
+      border-radius:14px;
+      background:#10151c;
+    }
+    .analysis-peel-row.link-row .analysis-letter{
+      background:#a85142;
+    }
+    .analysis-peel-row.link-row .analysis-label{
+      color:#d7c4a9;
+    }
+    .analysis-peel-row.link-row .analysis-text{
+      color:#fffaf1;
+      font-weight:720;
+    }
+    .analysis-workbench{display:none;}
+    .study-cue{
+      display:grid;
+      gap:9px;
+      padding:12px 13px;
+      border:1px solid rgba(128,104,75,.12);
+      border-radius:14px;
+      background:rgba(255,250,241,.46);
+    }
+    .memory-line{
+      font-size:15px;
+      line-height:1.45;
+      color:#1f2a33;
+      font-weight:850;
+    }
+    .memory-line span{
+      color:#8b4a3e;
+    }
+    .keyword-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    .keyword-chip{
+      font-size:11px;
+      font-weight:850;
+      color:#5e6670;
+      border:1px solid rgba(128,104,75,.12);
+      background:rgba(255,250,241,.62);
+      border-radius:999px;
+      padding:5px 8px;
+    }
+    .exam-use{
+      font-size:12px;
+      color:#766b5d;
+      font-weight:750;
+      line-height:1.4;
+    }
+    .intro-goals{
+      position:relative;
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;
+      max-width:760px;
+      margin:0 auto 24px;
+    }
+    .intro-goal{
+      border:1px solid rgba(128,104,75,.16);
+      border-radius:14px;
+      background:rgba(255,250,241,.46);
+      padding:13px 12px;
+      text-align:left;
+    }
+    .intro-goal b{
+      display:block;
+      font-size:13px;
+      letter-spacing:.12em;
+      color:#8b6d4c;
+      margin-bottom:5px;
+    }
+    .intro-goal span{
+      font-size:15px;
+      line-height:1.42;
+      color:#2a3540;
+      font-weight:680;
+    }
+    .completion-toast{
+      position:fixed;
+      right:22px;
+      bottom:22px;
+      z-index:1800;
+      width:min(360px,calc(100vw - 32px));
+      border:1px solid rgba(128,104,75,.16);
+      border-radius:18px;
+      background:rgba(255,250,241,.92);
+      box-shadow:0 26px 80px rgba(18,24,32,.18);
+      backdrop-filter:blur(20px);
+      padding:16px;
+      display:grid;
+      gap:10px;
+      transform:translateY(18px);
+      opacity:0;
+      pointer-events:none;
+      transition:opacity .35s ease,transform .35s cubic-bezier(.16,.84,.28,1);
+    }
+    .completion-toast.show{
+      opacity:1;
+      transform:translateY(0);
+      pointer-events:auto;
+    }
+    .completion-toast h3{
+      margin:0;
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:22px;
+      letter-spacing:-.035em;
+    }
+    .completion-toast p{
+      margin:0;
+      color:#34404a;
+      line-height:1.5;
+      font-weight:620;
+      font-size:14px;
+    }
+    .completion-actions{
+      display:flex;
+      gap:8px;
+    }
+    .completion-actions button{
+      flex:1;
+      min-height:38px;
+      border:1px solid rgba(128,104,75,.14);
+      border-radius:10px;
+      background:#fffaf1;
+      color:#10151c;
+      font-size:13px;
+      font-weight:850;
+    }
+    .completion-actions .primary{
+      background:#10151c;
+      color:#fffaf1;
+      border-color:#10151c;
+    }
+    .answer-role{
+      display:inline-flex;
+      margin-left:8px;
+      padding:3px 7px;
+      border-radius:999px;
+      background:rgba(128,104,75,.10);
+      color:#6e5b43;
+      font-size:10px;
+      letter-spacing:.08em;
+      vertical-align:middle;
+    }
+    .link-row .answer-role{
+      background:rgba(255,250,241,.12);
+      color:#d7c4a9;
+    }
+    /* Map top bar refinement */
+    .map-top{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:12px;
+      padding:14px 16px 0;
+    }
+    .map-title{
+      min-width:0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .scene-pill{
+      flex:0 0 auto;
+      box-shadow:none;
+      padding:7px 10px;
+    }
+    #mapTitle{
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .filter-wrap{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      background:rgba(255,250,241,.62);
+      box-shadow:none;
+      backdrop-filter:blur(14px);
+    }
+    .filter-meta{
+      font-size:10px;
+      letter-spacing:.12em;
+      white-space:nowrap;
+    }
+    .filter-bar{
+      gap:4px;
+    }
+    .filter-btn{
+      min-height:28px;
+      padding:0 8px;
+      border-radius:999px;
+      background:transparent;
+      border-color:transparent;
+      color:#48525d;
+      font-size:12px;
+      box-shadow:none!important;
+    }
+    .filter-btn.active{
+      background:rgba(255,255,255,.62);
+      color:#17202a;
+      border-color:rgba(128,104,75,.12);
+    }
+    .filter-btn .dot{
+      width:7px;
+      height:7px;
+    }
+    @media (orientation:portrait), (max-width:920px){
+      .map-top{grid-template-columns:1fr;}
+      #mapTitle{white-space:normal;}
+      .filter-wrap{justify-content:space-between;border-radius:14px;}
+      .filter-bar{justify-content:flex-start;}
+    }
+    .study-cue{
+      padding:0;
+      border-radius:14px;
+      overflow:hidden;
+      margin:12px 0 14px;
+      border:1px solid rgba(128,91,52,.34);
+      background:linear-gradient(135deg,rgba(255,250,241,.98),rgba(235,221,196,.86));
+      box-shadow:0 14px 30px rgba(64,47,27,.12);
+    }
+    .memory-toggle{
+      min-height:58px;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:0 15px;
+      cursor:pointer;
+      border:0;
+      background:transparent;
+      text-align:left;
+      font:inherit;
+    }
+    .memory-toggle:before{
+      content:"";
+      width:9px;
+      align-self:stretch;
+      margin:10px 0;
+      border-radius:999px;
+      background:linear-gradient(#a85142,#8b6536);
+      flex:0 0 auto;
+    }
+    .memory-summary-main{
+      display:grid;
+      gap:3px;
+      margin-right:auto;
+    }
+    .memory-summary-main .panel-section-label{
+      color:#5f4429;
+      font-size:13px;
+    }
+    .memory-summary-hint{
+      font-size:12px;
+      font-weight:700;
+      color:#8d755b;
+    }
+    .study-cue.open .memory-summary-hint{
+      font-size:0;
+    }
+    .study-cue.open .memory-summary-hint:after{
+      content:"已打開";
+      font-size:12px;
+    }
+    .memory-symbol{
+      color:#805b34;
+      font-size:22px;
+      font-weight:900;
+      line-height:1;
+    }
+    .memory-card-content{
+      display:grid;
+      gap:9px;
+      padding:0 13px 13px;
+    }
+    .memory-card-content[hidden]{
+      display:none;
+    }
+    @media (orientation:portrait), (max-width:920px){
+      .intro-goals{grid-template-columns:1fr;}
+      .completion-toast{left:16px;right:16px;bottom:16px;width:auto;}
+    }
+    /* Typography consistency pass */
+    :root{
+      --type-page-title:clamp(34px,3.6vw,54px);
+      --type-section-title:clamp(26px,2.2vw,34px);
+      --type-map-title:clamp(16px,1.35vw,21px);
+      --type-body:17px;
+      --type-support:15px;
+      --type-caption:12px;
+      --type-timeline:12px;
+    }
+    h1{font-size:var(--type-page-title);}
+    .event-title{font-size:var(--type-section-title);}
+    .map-title{font-size:var(--type-map-title);}
+    .date{font-size:15px;}
+    .event-thesis,.memory-line{font-size:16px;}
+    .copy{font-size:var(--type-body);}
+    .accordion-content,.analysis-text{font-size:var(--type-support);}
+    .info-accordion summary{font-size:14px;}
+    .label,.event-no,.filter-meta,.reason-kicker,.analysis-label{font-size:var(--type-caption);}
+    .tl-node .name{font-size:var(--type-timeline);}
+    .tl-node .num{font-size:9px;}
+    .reason-detail h3{font-size:clamp(26px,2.5vw,38px);}
+    .reason-card .reason-title{font-size:16px;}
+    .timeline{grid-template-columns:repeat(7,minmax(92px,1fr));}
+    .tl-node{
+      min-height:46px;
+      padding:6px 7px;
+    }
+    .tl-node .name{
+      white-space:normal;
+      line-height:1.18;
+      overflow:visible;
+      text-overflow:clip;
+    }
+    @media (orientation:portrait), (max-width:920px){
+      :root{
+        --type-body:16px;
+        --type-support:15px;
+        --type-timeline:13px;
+      }
+      .tl-node{min-width:126px;}
+    }
+    .app.analysis-mode{
+      grid-template-rows:auto minmax(0,1fr);
+    }
+    .app.analysis-mode .main{
+      grid-template-columns:1fr;
+    }
+    .app.analysis-mode .map-card,
+    .app.analysis-mode .timeline-wrap,
+    .app.analysis-mode .text-block,
+    .app.analysis-mode .accordion-list,
+    .app.analysis-mode .demo-btn{
+      display:none!important;
+    }
+    .app.analysis-mode .panel{
+      min-height:0;
+      border-radius:22px;
+    }
+    .app.analysis-mode .panel::before{
+      content:"DSE PEEL";
+    }
+    .app.analysis-mode .panel-inner{
+      padding:24px;
+      overflow:hidden;
+      display:grid;
+      grid-template-rows:auto minmax(0,1fr);
+    }
+    .app.analysis-mode .panel-header{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:end;
+      gap:18px;
+    }
+    .app.analysis-mode .event-thesis{
+      grid-column:1 / -1;
+      max-width:860px;
+    }
+    .app.analysis-mode .analysis-workbench{
+      min-height:0;
+      display:grid;
+      grid-template-columns:minmax(220px,.42fr) minmax(0,1fr);
+      gap:16px;
+      animation:contentSettle .52s cubic-bezier(.16,.84,.28,1) both;
+    }
+    .reason-list{
+      display:grid;
+      gap:8px;
+      align-content:start;
+      padding:4px;
+      border-radius:16px;
+      background:rgba(255,255,255,.28);
+      border:1px solid rgba(128,104,75,.12);
+    }
+    .reason-card{
+      min-height:70px;
+      padding:12px 13px;
+      border:1px solid rgba(128,104,75,.12);
+      border-radius:12px;
+      background:rgba(255,250,241,.55);
+      color:#26313a;
+      text-align:left;
+      display:grid;
+      gap:4px;
+    }
+    .reason-card .reason-no{
+      font-size:10px;
+      letter-spacing:.18em;
+      color:#8b6d4c;
+      font-weight:950;
+    }
+    .reason-card .reason-title{
+      font-size:18px;
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-weight:900;
+      letter-spacing:-.025em;
+    }
+    .reason-card .reason-hint{
+      font-size:12px;
+      color:#6e7680;
+      font-weight:750;
+    }
+    .reason-card.active{
+      background:#10151c;
+      color:#fffaf1;
+      border-color:#10151c;
+      box-shadow:0 18px 36px rgba(18,24,32,.16);
+    }
+    .reason-card.active .reason-no,
+    .reason-card.active .reason-hint{
+      color:#d7c4a9;
+    }
+    .reason-detail{
+      min-height:0;
+      border:1px solid rgba(128,104,75,.13);
+      border-radius:18px;
+      background:rgba(255,252,246,.62);
+      padding:22px;
+      overflow:auto;
+    }
+    .reason-kicker{
+      font-size:11px;
+      letter-spacing:.18em;
+      color:#8b6d4c;
+      font-weight:950;
+      text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .reason-detail h3{
+      margin:0 0 14px;
+      font-family:"Noto Serif TC","Songti TC","PingFang TC",serif;
+      font-size:clamp(28px,3vw,44px);
+      line-height:1.08;
+      letter-spacing:-.045em;
+    }
+    .analysis-peel{
+      display:grid;
+      gap:10px;
+    }
+    .analysis-peel-row{
+      display:grid;
+      grid-template-columns:40px 1fr;
+      gap:14px;
+      padding:14px 0;
+      border-top:1px solid rgba(128,104,75,.13);
+    }
+    .analysis-peel-row:first-child{
+      border-top:0;
+    }
+    .analysis-letter{
+      width:34px;
+      height:34px;
+      border-radius:50%;
+      display:grid;
+      place-items:center;
+      background:#10151c;
+      color:#fffaf1;
+      font-weight:950;
+      font-size:13px;
+    }
+    .analysis-peel-row:nth-child(2) .analysis-letter,
+    .analysis-peel-row:nth-child(3) .analysis-letter{
+      background:#8b6536;
+    }
+    .analysis-peel-row:nth-child(4) .analysis-letter{
+      background:#a85142;
+    }
+    .analysis-label{
+      font-size:11px;
+      letter-spacing:.16em;
+      text-transform:uppercase;
+      color:#8b6d4c;
+      font-weight:950;
+      margin-bottom:5px;
+    }
+    .analysis-text{
+      font-size:18px;
+      line-height:1.72;
+      color:#25303a;
+      font-weight:600;
+    }
+    @media (orientation:portrait), (max-width:920px){
+      .app.analysis-mode .panel-inner{padding:18px;overflow:visible;}
+      .app.analysis-mode .panel-header{grid-template-columns:1fr;}
+      .app.analysis-mode .analysis-workbench{grid-template-columns:1fr;}
+      .answer-guide{grid-template-columns:1fr;}
+      .reason-list{display:flex;overflow:auto;}
+      .reason-card{min-width:160px;}
+      .reason-detail{overflow:visible;padding:18px;}
+      .analysis-text{font-size:16px;}
+    }
+    @media (orientation:portrait), (max-width:920px){
+      .app{padding:14px;gap:12px;}
+      header{grid-template-columns:1fr;align-items:start;gap:10px;}
+      .header-actions{width:100%;display:grid;grid-template-columns:1fr auto;align-items:stretch;}
+      .stage-tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr);}
+      .analysis-tab{min-height:42px;padding:0 12px;}
+      .main{grid-template-columns:1fr;}
+      #map{min-height:58vh;}
+      .map-top{display:grid;}
+      .filter-wrap{justify-items:start;}
+      .filter-bar{justify-content:flex-start;}
+      .panel::before{display:none;}
+      .panel-inner{padding:20px;}
+      .copy{font-size:17px;}
+      .event-thesis{font-size:15.5px;}
+      .accordion-content{font-size:15px;}
+      .timeline-wrap{grid-template-columns:1fr;}
+      .timeline-progress{top:0;left:12px;right:12px;}
+      .timeline{display:flex;overflow:auto;padding-bottom:2px;}
+      .tl-node{min-width:138px;}
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <div class="eyebrow">1894–1895 Interactive Teaching Map</div>
+        <h1>甲午風雲：洋務運動的終極考驗</h1>
+      </div>
+      <div class="header-actions">
+        <nav class="stage-tabs" aria-label="三幕式敘事">
+          <button class="stage-tab active" data-stage="background">戰前背景</button>
+          <button class="stage-tab" data-stage="war">戰爭過程</button>
+          <button class="stage-tab" data-stage="result">戰後結果</button>
+        </nav>
+        <button class="analysis-tab" id="analysisTab">戰敗原因</button>
+      </div>
+    </header>
+
+    <section class="main">
+      <div class="map-card">
+        <div class="map-top">
+          <div class="map-title"><span id="scenePill" class="scene-pill">戰前背景</span><span id="mapTitle">朝鮮危機如何引發中日衝突？</span></div>
+          <div class="filter-wrap">
+            <div class="filter-meta">圖層篩選</div>
+            <div class="filter-bar" aria-label="圖層開關">
+              <button class="filter-btn active" id="toggleQing"><i class="dot q"></i>清方相關</button>
+              <button class="filter-btn active" id="toggleJapan"><i class="dot j"></i>日方行動</button>
+              <button class="filter-btn active" id="toggleResult"><i class="dot r"></i>戰後割讓</button>
+            </div>
+          </div>
+        </div>
+        <div id="map"></div>
+        <div class="schematic-map" id="schematicMap" aria-hidden="true">
+          <svg viewBox="0 0 1000 620" preserveAspectRatio="none">
+            <path class="schematic-land" d="M86,44 C172,68 222,128 210,214 C198,300 236,378 184,480 C148,552 72,578 0,596 L0,0 C28,14 54,30 86,44 Z"/>
+            <path class="schematic-land" d="M460,88 C530,112 568,176 548,244 C528,312 568,388 520,472 C486,534 418,552 366,512 C314,472 324,398 348,336 C372,276 344,206 374,150 C392,116 424,92 460,88 Z"/>
+            <path class="schematic-land" d="M704,78 C792,104 842,178 818,268 C796,350 832,430 790,516 C750,596 640,610 590,536 C548,474 590,398 610,332 C632,262 600,182 632,126 C648,98 674,82 704,78 Z"/>
+            <path class="schematic-land" d="M870,350 C910,372 918,424 884,458 C850,494 792,474 786,430 C780,390 828,330 870,350 Z"/>
+            <text class="schematic-sea-label" x="420" y="315">黃海</text>
+            <circle class="schematic-dot" cx="704" cy="162" r="5"/><text class="schematic-place" x="716" y="166">日本</text>
+            <circle class="schematic-dot" cx="510" cy="248" r="5"/><text class="schematic-place" x="522" y="252">朝鮮</text>
+            <circle class="schematic-dot" cx="376" cy="170" r="5"/><text class="schematic-place" x="388" y="174">遼東</text>
+            <circle class="schematic-dot" cx="340" cy="304" r="5"/><text class="schematic-place" x="352" y="308">威海衛</text>
+            <circle class="schematic-dot" cx="856" cy="424" r="5"/><text class="schematic-place" x="868" y="428">台灣</text>
+          </svg>
+        </div>
+        <div class="map-loading" id="mapLoading"><span>正在載入歷史地圖...</span></div>
+        <div class="map-status-note" id="mapStatusNote">外部地圖載入較慢，已切換至教學示意底圖；事件線與重點標記仍可正常使用。</div>
+        <div class="map-demo-caption hidden" id="mapDemoCaption">真實地圖戰況演示</div>
+        <div class="map-demo-bar hidden" id="mapDemoBar">
+          <div class="demo-step-chip" id="mapDemoStep">STEP 1 / 5</div>
+          <div class="map-demo-text"><h3 id="mapDemoTitle">黃海海戰</h3><p id="mapDemoCopy">戰況演示</p><div class="map-demo-progress"><span id="mapDemoProgressFill"></span></div></div>
+          <div class="map-demo-controls">
+            <button id="mapDemoPrev">← 上一步</button>
+            <button class="primary" id="mapDemoPlay">自動播放</button>
+            <button id="mapDemoNext">下一步 →</button>
+            <button id="mapDemoClose">返回主地圖</button>
+          </div>
+        </div>
+        <div class="map-credit" id="mapCredit">Real map tile basemap · teaching overlay</div>
+      </div>
+
+      <aside class="panel">
+        <button class="panel-toggle" id="panelToggle" aria-label="收合或打開筆記"></button>
+        <div class="panel-inner">
+        <div class="panel-header">
+          <div class="event-no" id="eventNo">01 / 08</div>
+          <h2 class="event-title" id="eventTitle">東學黨之亂</h2>
+          <div class="date" id="eventDate">1894年春夏</div>
+          <div class="event-thesis" id="eventThesis"></div>
+        </div>
+        <div class="text-block">
+          <section><div class="panel-section-label">事件簡述</div><p class="copy" id="eventSummary"></p></section>
+        </div>
+        <button class="demo-btn" id="demoButton">觀看戰況演示</button>
+        <div class="accordion-list">
+          <div class="panel-section-label">補充資料</div>
+          <div class="supplement-block">
+            <details class="info-accordion" id="accProcess"><summary>過程重點</summary><div class="accordion-content" id="eventProcess"></div></details>
+            <div class="study-cue" id="studyCue">
+              <button class="memory-toggle" id="memoryToggle" type="button" aria-expanded="false" aria-controls="memoryCardContent">
+                <span class="memory-summary-main"><span class="panel-section-label">記憶卡</span><span class="memory-summary-hint">點擊打開重點句</span></span>
+                <span class="memory-symbol" id="memorySymbol" aria-hidden="true">＋</span>
+              </button>
+              <div class="memory-card-content" id="memoryCardContent" hidden>
+                <div class="memory-line" id="memoryLine"></div>
+                <div class="keyword-row" id="keywordRow"></div>
+                <div class="exam-use" id="examUse"></div>
+              </div>
+            </div>
+            <details class="info-accordion" id="accMeaning"><summary>歷史意義｜PEEL 分析</summary><div class="accordion-content" id="eventMeaning"></div></details>
+            <details class="info-accordion" id="accDefeat"><summary>甲午戰敗原因｜PEEL 總結</summary><div class="accordion-content" id="warDefeat"></div></details>
+          </div>
+        </div>
+        <div class="analysis-workbench" id="analysisWorkbench">
+          <div class="answer-guide">
+            <div><b>短題</b>選 1 個原因，寫成一段完整 PEEL。</div>
+            <div><b>長題</b>選 3 個原因，按重要性排列成多段答案。</div>
+          </div>
+          <div class="reason-list" id="reasonList"></div>
+          <div class="reason-detail" id="reasonDetail"></div>
+        </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="timeline-wrap">
+      <div class="timeline-progress" aria-hidden="true"><span id="timelineProgress"></span></div>
+      <button class="nav-btn" id="prevBtn">← 上一節</button>
+      <button class="auto-btn" id="autoBtn">自動播放</button>
+      <div class="timeline" id="timeline"></div>
+      <button class="nav-btn" id="nextBtn">下一節 →</button>
+    </section>
+  </main>
+
+
+  <div class="intro-overlay" id="introOverlay" onclick="if(event.target.id==='introOverlay'){this.classList.add('hidden')}">
+    <div class="intro-card">
+      <div class="intro-kicker">DSE Interactive Study Map</div>
+      <h2 class="intro-title">甲午風雲</h2>
+      <p class="intro-copy">用地圖記住歷史轉折，再用 PEEL 組裝文憑試答案。</p>
+      <div class="intro-goals" aria-label="學習目標">
+        <div class="intro-goal"><b>01</b><span>看懂甲午戰爭進程</span></div>
+        <div class="intro-goal"><b>02</b><span>掌握戰敗原因論點</span></div>
+        <div class="intro-goal"><b>03</b><span>建立 DSE 答題框架</span></div>
+      </div>
+      <button class="intro-btn" id="introStart" onclick="document.getElementById('introOverlay').classList.add('hidden')">開始導覽</button>
+    </div>
+  </div>
+
+  <div class="completion-toast" id="completionToast" role="status" aria-live="polite">
+    <h3>已完成戰爭進程</h3>
+    <p>你已完成 7 個事件。建議下一步：選 3 個戰敗原因，組成一條長題答案。</p>
+    <div class="completion-actions">
+      <button class="primary" id="completionAnalysis">重溫戰敗原因</button>
+      <button id="completionClose">稍後再看</button>
+    </div>
+  </div>
+
+  <div class="demo-overlay hidden" id="demoOverlay" role="dialog" aria-modal="true">
+    <div class="demo-shell">
+      <div class="demo-head">
+        <div><div class="demo-kicker" id="demoKicker">戰況演示</div><h2 class="demo-title" id="demoTitle">黃海海戰</h2></div>
+        <button class="close-demo" id="closeDemo">×</button>
+      </div>
+      <div class="demo-body">
+        <div class="sea-stage" id="seaStage">
+          <div class="coast korea"></div><div class="coast china"></div><div class="coast shandong"></div>
+          <svg class="demo-svg" id="demoSvg" viewBox="0 0 1000 620" preserveAspectRatio="none"></svg>
+          <div id="demoPorts"></div>
+          <div id="demoFleet"></div>
+        </div>
+        <div class="demo-info">
+          <div class="step-count" id="stepCount">STEP 1 / 5</div>
+          <h3 class="step-title" id="stepTitle"></h3>
+          <p class="step-copy" id="stepCopy"></p>
+          <div class="step-meaning" id="stepMeaning"></div>
+          <div class="demo-note">示意圖聚焦戰局變化，非逐艦精密復原。</div>
+        </div>
+      </div>
+      <div class="demo-controls">
+        <button class="demo-control" id="demoPrev">← 上一步</button>
+        <button class="demo-control primary" id="demoPlay">自動播放</button>
+        <button class="demo-control" id="demoNext">下一步 →</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+if(!window.L){
+  document.querySelector('.map-card')?.classList.add('fallback-active');
+  document.getElementById('mapLoading')?.classList.add('hidden');
+  const note=document.getElementById('mapStatusNote');
+  if(note) note.textContent='地圖程式未能載入，已顯示教學示意底圖。請檢查網絡後重新整理。';
+  throw new Error('Leaflet unavailable');
+}
+const P={
+  Beijing:[116.4,39.9],Tianjin:[117.2,39.1],Dagu:[117.72,38.98],DalianBay:[121.85,38.95],
+  Lushun:[121.3,38.8],Weihai:[122.1,37.5],Liugong:[122.18,37.50],Rongcheng:[122.43,37.16],WeihaiSea:[122.45,37.62],
+  Pyongyang:[125.75,39.03],Seoul:[126.98,37.56],Incheon:[126.63,37.46],Asan:[126.98,36.79],AsanBay:[126.77,36.94],Seonghwan:[127.13,36.92],Pungdo:[126.42,37.03],Kowshing:[126.38,37.00],
+  Yalu:[124.4,39.9],YaluMouth:[124.35,39.72],YellowSea:[124.2,38.55],YellowNorth:[124.75,39.25],YellowJapan:[125.75,38.25],YellowQing:[123.9,38.6],
+  Shimonoseki:[130.93,33.95],Taiwan:[121,23.7],Penghu:[119.57,23.57],Liaodong:[121.7,39.4],Jeolla:[126.8,35.2],Tokyo:[139.7,35.7],JapanSea:[131.6,35.5],Ujina:[132.48,34.37]
+};
+const events=[
+ {scene:'background',sceneName:'戰前背景',mapTitle:'日本崛起如何埋下戰爭背景？',date:'1868–1894年',title:'明治維新與日本擴張',summary:'日本在明治維新後，仿效歐美改革政治、軍事和工業，迅速走向富國強兵。國力提升後，日本逐步形成對外擴張意識，並把朝鮮和中國視為擴張方向，成為甲午戰爭的深層背景。',process:['日本被迫打破鎖國後，於1868年開始明治維新。','日本引入西方工業技術，建立新式軍隊，推行君主立憲。','工商業發展帶動國力上升，但資源不足亦促使日本向外擴張。','日本提出「大陸政策」一類擴張構想，逐步把朝鮮和中國納入侵略目標。'],meaning:'明治維新不只是日本現代化的起點，也使日本具備向外擴張的能力和野心。因此，甲午戰爭不能只視為朝鮮危機的結果，亦要放在日本崛起與帝國主義擴張的背景下理解。',center:[130.8,35.0],zoom:3.5,markers:[['日本明治維新',P.Tokyo,'japan'],['朝鮮',P.Seoul,'korea'],['中國沿海',P.Tianjin,'qing']],lines:[['Tokyo','Seoul','日本擴張視線','japan'],['Tokyo','Tianjin','大陸政策方向','japan']]},
+ {scene:'background',sceneName:'戰前背景',mapTitle:'朝鮮內亂如何變成中日衝突？',date:'1894年春夏',title:'東學黨之亂與中日派兵',summary:'朝鮮爆發東學黨之亂，朝鮮政府向清廷求援。清廷派兵入朝，日本亦以保護僑民及共同平亂為名派兵。亂平後，日本拒絕撤軍，並脅迫朝鮮脫離與中國的宗藩關係，使中日衝突升級。',process:['朝鮮因政治腐敗、民生困苦和外來壓力，爆發東學黨之亂。','朝鮮政府無力鎮壓，向清廷求援，清朝遂派兵入朝。','日本以保護僑民和共同平亂為名派兵，實際上藉機擴大在朝鮮的勢力。','亂平後，日本拒絕撤兵，並控制漢城局勢，令中日談判破裂。'],meaning:'東學黨之亂本是朝鮮內部危機，但日本藉機挑戰清朝在朝鮮的宗主地位，使朝鮮問題由內亂變成中日衝突的導火線。',center:[126.8,37.2],zoom:3.8,markers:[['東學黨活動區',P.Jeolla,'korea'],['漢城',P.Seoul,'korea'],['牙山灣',P.AsanBay,'qing'],['大沽口',P.Dagu,'qing'],['高陞號航經海域',P.Kowshing,'qing']],lines:[['Dagu','Kowshing','清軍海運赴朝','qing'],['Kowshing','AsanBay','赴牙山增援方向','qing'],['Ujina','Incheon','日軍入朝','japan'],['Incheon','Seoul','控制漢城','japan']]},
+ {scene:'war',sceneName:'戰爭過程',mapTitle:'戰爭如何由牙山與豐島爆發？',date:'1894年7月25–29日',title:'牙山・豐島海戰・高陞號',summary:'清軍約千餘人駐守牙山，日軍則增兵並包圍牙山。其後日軍在豐島附近襲擊清方艦船，並擊沉清廷僱用、運載援軍的英商運兵船高陞號。清軍退守平壤，中日戰爭實際爆發。',process:['清軍駐守牙山，日本則持續增兵，雙方在朝鮮形成軍事對峙。','日軍包圍牙山，清軍援兵則由海路前往支援。','日本艦隊在豐島附近襲擊清方艦船，並擊沉高陞號。','高陞號事件造成清軍重大傷亡，清軍被迫退守平壤。'],meaning:'牙山與豐島海戰使中日衝突由外交對峙轉為公開軍事衝突。高陞號事件亦顯示清方在海上運兵、護航及戰爭準備方面處於被動。',center:[126.65,36.95],zoom:4.5,markers:[['豐島海戰',P.Pungdo,'japan'],['高陞號沉沒',P.Kowshing,'qing'],['牙山',P.Asan,'qing'],['成歡',P.Seonghwan,'japan']],lines:[['Dagu','Kowshing','高陞號運兵線','qing'],['Kowshing','AsanBay','原定赴牙山','qing'],['Pungdo','Kowshing','日艦截擊','japan'],['Seonghwan','Asan','牙山壓迫','japan']]},
+ {scene:'war',sceneName:'戰爭過程',mapTitle:'清軍如何退出朝鮮？',date:'1894年9月15日',title:'平壤戰役',summary:'日軍進攻平壤，清軍總兵左寶貴戰死，但主帥葉志超棄城逃過鴨綠江。平壤失守後，清軍退出朝鮮戰場，戰線向中國邊境推移。',process:['日軍由漢城北上，向平壤形成攻勢。','清軍依城防守，但指揮協調、士氣及補給均不足。','左寶貴戰死，清軍防線瓦解。','葉志超棄城撤退，清軍退過鴨綠江，朝鮮戰場主動權落入日本手中。'],meaning:'平壤戰役標誌清軍在朝鮮陸戰的重大失利。此後，戰線由朝鮮半島推向中國邊境，清廷不再只是處理朝鮮危機，而是面臨本土安全威脅。',center:[126.0,38.65],zoom:4.0,markers:[['平壤',P.Pyongyang,'japan'],['鴨綠江方向',P.Yalu,'qing'],['漢城',P.Seoul,'korea']],lines:[['Seoul','Pyongyang','日軍北進','japan'],['Pyongyang','Yalu','清軍退卻','qing']]},
+ {scene:'war',sceneName:'戰爭過程',mapTitle:'北洋艦隊為何失去制海權？',date:'1894年9月17日',title:'黃海海戰與保船制敵',summary:'丁汝昌率北洋艦隊護送陸軍至大東溝，途中與日本聯合艦隊爆發黃海海戰。清方致遠、經遠、超勇等艦受重創或沉沒，鄧世昌、林永升等戰死。戰後李鴻章採取「保船制敵」，北洋艦隊退守威海衛，清廷逐步喪失制海權。',process:['北洋艦隊護送陸軍至大東溝一帶。','日本聯合艦隊主動接戰，雙方在黃海北部激烈炮戰。','清方多艦受創或沉沒，鄧世昌、林永升等將領戰死。','戰後李鴻章採取「保船制敵」策略，北洋艦隊退守威海衛，清方海上行動轉趨被動。'],meaning:'黃海海戰不是北洋艦隊立即覆滅的一戰，但它使清廷喪失海上主動權。保守的「保船制敵」更令北洋艦隊退入港內，為日軍進攻遼東與山東提供有利條件。',center:[124.1,38.7],zoom:3.6,demo:'yellow',markers:[['黃海海戰',P.YellowSea,'japan'],['大東溝／鴨綠江口',P.YaluMouth,'qing'],['威海衛',P.Weihai,'qing'],['旅順',P.Lushun,'qing']],lines:[['Weihai','YaluMouth','北洋艦隊護航','qing'],['YaluMouth','YellowSea','返航接戰','qing'],['JapanSea','YellowSea','日本聯合艦隊','japan'],['YellowSea','Weihai','保船制敵退守','qing']]},
+ {scene:'war',sceneName:'戰爭過程',mapTitle:'北洋艦隊如何走向覆滅？',date:'1894年11月–1895年2月',title:'遼東戰役與威海衛海戰',summary:'日軍掌握制海權後海陸並進，登陸遼東半島，攻破大連、旅順，並威脅清廷中央。其後日軍轉攻山東，陸軍從後路攻佔威海衛，海軍從正面封鎖。丁汝昌、張文宣、劉步蟾等人自殺殉國，北洋艦隊全軍覆沒。',process:['黃海海戰後，北洋艦隊退守威海衛。','日軍利用制海權，登陸遼東半島，攻破大連和旅順。','日軍其後轉攻山東，形成對威海衛的海陸夾擊。','北洋艦隊被困劉公島一帶，最終全軍覆沒。'],meaning:'威海衛海戰標誌北洋艦隊的終結。它反映清方一旦失去制海權，便難以阻止日軍登陸與包圍，整個北洋海防體系亦隨之崩潰。',center:[122.0,38.2],zoom:4.0,demo:'weihai',markers:[['旅順陷落',P.Lushun,'japan'],['威海衛海戰',P.Weihai,'japan'],['劉公島',P.Liugong,'qing'],['北洋艦隊基地',P.Weihai,'qing']],lines:[['Yalu','Lushun','日軍入遼東','japan'],['Lushun','Weihai','戰線轉向山東','japan'],['WeihaiSea','Liugong','海上封鎖','japan']]},
+ {scene:'result',sceneName:'戰後結果',mapTitle:'《馬關條約》如何改變中國與東亞？',date:'1895年4月17日',title:'《馬關條約》與戰後影響',summary:'清廷無力再戰，派李鴻章赴日本馬關與伊藤博文簽訂《馬關條約》。條約規定清朝承認朝鮮獨立，割讓遼東半島、台灣及澎湖，賠款二億兩白銀，開放沙市、重慶、蘇州、杭州為商埠，並准許日本在通商口岸設廠。',process:['清廷在戰場連番失利後，被迫向日本求和。','《馬關條約》使清朝承認朝鮮獨立，失去傳統東亞宗主地位。','割地、賠款、開埠和設廠權，令中國主權、財政及民族工業受到重創。','三國干涉還遼後，列強隨即掀起瓜分中國狂潮。'],meaning:'《馬關條約》令中國國際地位急跌，財政負擔沉重，民族工業受打擊，並引發瓜分危機。同時，甲午戰敗宣告洋務運動單靠器物自強已不足以救國，刺激維新變法與民族覺醒。',center:[124,31.2],zoom:2.2,markers:[['馬關',P.Shimonoseki,'result'],['台灣',P.Taiwan,'result'],['澎湖',P.Penghu,'result'],['遼東半島',P.Liaodong,'result']],lines:[]},
+ {scene:'result',sceneName:'戰敗總結',mapTitle:'甲午戰敗的根本原因是甚麼？',date:'總結',title:'甲午戰敗原因',summary:'甲午戰敗不是單一戰役失誤，而是清廷在決策、外交、制度、戰略和軍備上的整體失敗。與日本舉國一致、準備充足相比，清廷和戰不定、誤信列強、各自為政、戰略保守，並且軍備不足，最終導致戰敗。',process:['內部分歧，和戰不定：光緒主戰，慈禧及主和派顧慮實力與政局，清廷決策搖擺，錯失備戰先機。','昧於形勢，誤信列強：李鴻章過度依賴英、俄等國調停，未能積極備戰，日本則趁機完成軍事部署。','未盡全力，各自為政：各省漠視戰事，南洋、福建、廣東水師未能有效配合，清廷以北洋一隅之力對抗日本全國之師。','戰略失當，流於保守：黃海海戰後採取「保船制敵」，北洋艦隊退守威海衛，反而喪失制海權。','軍備不足，軍力不振：北洋艦隊多年未添新船新炮，速射炮不足，將領素質參差，清軍戰鬥力不及日軍。'],meaning:'甲午戰敗集中暴露晚清改革的局限：清朝雖有新式軍艦和海防基地，卻缺乏支撐現代戰爭的政治決策、財政投入、軍事統籌和制度改革。',center:[123.5,37.0],zoom:3.2,markers:[['和戰不定',P.Beijing,'qing'],['誤信列強',P.Tianjin,'qing'],['各自為政',P.Weihai,'qing'],['戰略失當',P.YellowSea,'result'],['軍備不足',P.WeihaiSea,'qing']],lines:[]}
+];
+
+const PEEL_DATA=[
+ {p:'明治維新使日本具備挑戰中國的國力，是甲午戰爭爆發的深層背景。',e1:'日本推行明治維新，引入西方工業技術、建立新式軍隊，國力迅速提升。',e2:'日本現代化後出現對外擴張野心，並把朝鮮和中國視為擴張方向。',l:'因此，甲午戰爭與日本富國強兵及軍國主義興起密切相關。'},
+ {p:'東學黨之亂是甲午戰爭的直接導火線。',e1:'朝鮮向清廷求援後，中日同時派兵入朝；日本在亂平後拒絕撤軍。',e2:'日本把朝鮮內亂轉化為擴張機會，挑戰清朝在朝鮮的宗主地位。',l:'因此，東學黨之亂令中日衝突由外交角力升級為軍事危機。'},
+ {p:'牙山與豐島海戰使中日衝突正式軍事化。',e1:'日軍包圍牙山，並在豐島附近擊沉高陞號。',e2:'清軍援兵未能安全抵達，亦反映清方海上運輸及護航能力不足。',l:'因此，豐島海戰和高陞號事件標誌甲午戰爭實際爆發。'},
+ {p:'平壤戰役使清軍失去朝鮮戰場主動權。',e1:'日軍進攻平壤，左寶貴戰死，葉志超棄城逃過鴨綠江。',e2:'清軍撤離後，日本基本控制朝鮮戰場，戰線推向中國邊境。',l:'因此，平壤失守是清軍陸戰失利的重要轉折。'},
+ {p:'黃海海戰令清方逐漸喪失制海權。',e1:'北洋艦隊多艦受創或沉沒，鄧世昌、林永升等戰死。',e2:'戰後李鴻章採取「保船制敵」，北洋艦隊退守威海衛，海上主動權轉向日本。',l:'因此，黃海海戰令清軍在遼東及山東戰局中逐步陷入被動。'},
+ {p:'遼東與威海衛戰局反映北洋海防體系崩潰。',e1:'日軍攻破大連、旅順，並以海陸夾擊進攻威海衛；北洋艦隊最終覆滅。',e2:'清方失去制海權後，日軍能自由登陸與包圍，北洋艦隊退守港內反而失去機動能力。',l:'因此，威海衛海戰象徵洋務海防建設未能承受現代戰爭考驗。'},
+ {p:'《馬關條約》使中國主權、財政和國際地位受到沉重打擊。',e1:'清朝承認朝鮮獨立，割讓台灣、澎湖及遼東半島，賠款二億兩白銀，並開放商埠和准許日本設廠。',e2:'割地破壞領土完整，巨額賠款加重民生負擔，日本設廠權亦嚴重打擊民族工業。',l:'因此，《馬關條約》引發瓜分危機，並刺激維新變法和民族覺醒。'},
+ {p:'甲午戰敗源於清廷未能以統一而有效的國家體系應付現代戰爭。',e1:'清廷內部分歧、誤信列強、各省各自為政；戰場上又有保守戰略和軍備不足等問題。',e2:'這些因素令清朝在決策、外交、財政、軍事協同與戰場指揮上均陷入被動。',l:'因此，甲午戰敗不是單一戰役失誤，而是晚清制度、軍事和現代化不足的總暴露。'}
+];
+events.forEach((e,i)=>{e.peel=PEEL_DATA[i];});
+function peelHtml(peel){if(!peel)return ''; const rows=[['P','Point｜論點',peel.p],['E','Evidence｜史實',peel.e1],['E','Explain｜解釋',peel.e2],['L','Link｜扣連',peel.l]]; return `<div class="peel-wrap">${rows.map(r=>`<div class="peel-row"><div class="peel-letter">${r[0]}</div><div><div class="peel-label">${r[1]}</div><div class="peel-text">${r[2]}</div></div></div>`).join('')}</div>`;}
+
+
+// Fail-safe opening overlay controls: bind before Leaflet map initialization.
+document.getElementById('introStart')?.addEventListener('click',()=>{document.getElementById('introOverlay')?.classList.add('hidden');});
+document.getElementById('introOverlay')?.addEventListener('click',e=>{if(e.target.id==='introOverlay'){document.getElementById('introOverlay')?.classList.add('hidden');}});
+
+let active=0;
+let timelineTimer=null;
+const layerState={qing:true,japan:true,result:true};
+let renderToken=0;
+const analysisIndex=7;
+const timelineEvents=events.slice(0,analysisIndex);
+let activeReason=0;
+const DSE_LINES=[
+ [['Tokyo','Seoul','大陸政策：朝鮮為跳板','japan'],['Seoul','Liaodong','伸向中國東北','japan']],
+ [['Dagu','AsanBay','清軍入朝','qing'],['Ujina','Seoul','日軍控制漢城','japan']],
+ [],
+ [['Pyongyang','Yalu','清軍退出朝鮮','qing']],
+ [['YellowSea','Weihai','北洋退守威海衛','qing']],
+ [],
+ [],
+ []
+];
+const DSE_MARKERS=[
+ [['日本明治維新',P.Tokyo,'japan'],['朝鮮作為跳板',P.Seoul,'korea'],['中國東北',P.Liaodong,'qing']],
+ [['朝鮮危機',P.Seoul,'korea'],['清日入朝',P.AsanBay,'qing']],
+ [['豐島截擊',P.Pungdo,'japan'],['高陞號沉沒',P.Kowshing,'qing']],
+ [['平壤失守',P.Pyongyang,'japan'],['鴨綠江方向',P.Yalu,'qing']],
+ [['黃海接戰區',P.YellowSea,'japan'],['威海衛退守',P.Weihai,'qing']],
+ [['威海衛封鎖',P.Weihai,'japan'],['北洋覆滅',P.Liugong,'qing']],
+ [['馬關',P.Shimonoseki,'result'],['台灣',P.Taiwan,'result'],['澎湖',P.Penghu,'result'],['遼東半島',P.Liaodong,'result']],
+ []
+];
+const EVENT_STUDY_META=[
+ {memory:'明治維新 → 日本國力提升 → 對外擴張',keywords:['明治維新','大陸政策','朝鮮為跳板'],exam:'可用作：甲午戰爭背景、日本崛起與對外擴張。'},
+ {memory:'朝鮮內亂 → 中日派兵 → 戰爭危機',keywords:['東學黨之亂','中日派兵','宗藩關係'],exam:'可用作：甲午戰爭爆發原因。'},
+ {memory:'日艦截擊 → 高陞號沉沒 → 戰爭爆發',keywords:['豐島海戰','高陞號','戰爭爆發'],exam:'可用作：甲午戰爭初期形勢、清方被動。'},
+ {memory:'平壤失守 → 清軍退卻 → 朝鮮戰場失利',keywords:['平壤戰役','清軍退卻','鴨綠江'],exam:'可用作：清軍陸戰失利、朝鮮戰場主動權轉移。'},
+ {memory:'黃海受挫 → 保船制敵 → 失去制海權',keywords:['黃海海戰','保船制敵','制海權'],exam:'可用作：戰略失當、北洋艦隊轉入被動。'},
+ {memory:'海陸夾擊 → 北洋受困 → 艦隊覆滅',keywords:['威海衛','海陸夾擊','北洋覆滅'],exam:'可用作：洋務運動局限、甲午戰敗原因。'},
+ {memory:'割地賠款 → 主權受損 → 民族危機加深',keywords:['馬關條約','割讓台澎遼','賠款二億兩'],exam:'可用作：甲午戰爭影響、民族危機加深。'}
+];
+const ANALYSIS_REASONS=[
+ {title:'和戰不定',hint:'決策搖擺',p:'清廷和戰不定，令政府未能及早作出一致而有效的戰爭部署，是甲午戰敗的重要原因。',e1:'甲午戰爭前後，清廷內部對是否與日本開戰意見分歧。光緒帝較傾向主戰，但慈禧、李鴻章及部分官員則顧慮清軍實力、財政負擔和政局穩定，傾向求和或觀望。',e2:'由於中央決策搖擺，清廷未能在戰爭初期迅速集中兵力、增援朝鮮及統一前線指揮。這使清軍在牙山、平壤和黃海等戰局中往往處於被動，難以把握戰機。',l:'因此，和戰不定反映晚清中央決策效率低下，未能以統一意志應付現代國家戰爭，最終削弱清軍戰鬥力。'},
+ {title:'誤信列強',hint:'外交幻想',p:'清廷過度寄望列強調停，低估日本開戰決心，因而錯失積極備戰的時機。',e1:'戰爭危機加深時，李鴻章等人希望英國、俄國等列強出面調停，認為可透過外交壓力限制日本行動。清廷因此未能完全把注意力放在軍事動員和前線部署上。',e2:'可是列強多以自身利益為先，並沒有真正阻止日本擴張。相反，日本利用清廷觀望外交調停的時間，加快派兵入朝、控制漢城，並準備海陸攻勢。',l:'因此，誤信列強令清廷在戰爭準備上落後日本，說明晚清外交判斷失準，也是戰敗的重要原因。'},
+ {title:'各自為政',hint:'動員不足',p:'清朝各省各自為政，未能動員全國軍事力量，只以北洋一隅對抗日本全國之師。',e1:'甲午戰爭主要由李鴻章的北洋系統承擔，北洋艦隊和淮軍成為主力；但南洋、福建、廣東等水師沒有有效北上配合作戰，各省督撫亦多採觀望態度。',e2:'這種地方分散和缺乏統籌的情況，使清廷未能形成全國性的軍事動員。相比之下，日本明治維新後建立較集中的現代國家體制，能以政府力量統一調度軍隊、財政和後勤。',l:'因此，各自為政暴露清朝制度鬆散和中央統籌能力不足，令清軍在整體國力動員上明顯不及日本。'},
+ {title:'戰略失當',hint:'保守失勢',p:'清方戰略過於保守，尤其黃海海戰後採取「保船制敵」，使北洋艦隊逐步失去海上主動權。',e1:'黃海海戰後，北洋艦隊雖然未即時全軍覆沒，但多艦受創。李鴻章為保存艦隊實力，採取「保船制敵」策略，命北洋艦隊退守威海衛，減少主動出海作戰。',e2:'這一策略表面上保存艦隻，實際上令北洋艦隊失去機動能力和制海權。日軍因而能較自由地登陸遼東、攻佔旅順，再轉攻山東，最終以海陸夾擊包圍威海衛。',l:'因此，戰略失當使清方由主動防禦變成被動困守，加速北洋艦隊覆滅，是甲午戰敗的關鍵因素。'},
+ {title:'軍備不足',hint:'洋務局限',p:'清軍軍備和訓練不足，反映洋務運動只重器物而缺乏持續制度改革，難以應付日本現代化軍隊。',e1:'北洋艦隊雖曾是亞洲具規模的新式艦隊，但甲午戰爭前多年未添置新艦新炮，速射炮數量不足，彈藥質素、維修保養和官兵訓練亦未能配合現代海戰需要。',e2:'日本則透過明治維新建立較完整的現代軍制，持續更新軍艦、武器、訓練和指揮制度。結果日軍在機動、火力、協同和後勤方面普遍較清軍優勝。',l:'因此，軍備不足說明洋務運動單靠購買西方器物並不足以富國強兵；缺乏制度和軍事管理改革，最終導致清朝在甲午戰爭中失敗。'}
+];
+const map = L.map('map', { zoomControl:false, attributionControl:false, preferCanvas:false }).setView([37.6,126.8], 6);
+L.control.zoom({ position:'bottomright' }).addTo(map);
+L.control.attribution({ position:'bottomleft', prefix:false }).addTo(map);
+const mapCard=document.querySelector('.map-card');
+const mapLoading=document.getElementById('mapLoading');
+let mapReady=false;
+function finishMapLoading(){mapReady=true;mapLoading?.classList.add('hidden');}
+function activateMapFallback(){mapLoading?.classList.add('hidden');mapCard?.classList.add('fallback-active');}
+const baseTiles=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {subdomains:'abcd', maxZoom:10, minZoom:3, attribution:'&copy; OpenStreetMap contributors &copy; CARTO'});
+baseTiles.on('load',finishMapLoading);
+baseTiles.on('tileerror',activateMapFallback);
+baseTiles.addTo(map);
+setTimeout(()=>{if(!mapReady)activateMapFallback();},4200);
+const overlayLayer = L.layerGroup().addTo(map);
+const baseLayer = L.layerGroup().addTo(map);
+const baseMarkers={};
+map.createPane('baseLabels'); map.getPane('baseLabels').style.zIndex=330;
+map.createPane('routeGlow'); map.getPane('routeGlow').style.zIndex=360;
+map.createPane('routeMain'); map.getPane('routeMain').style.zIndex=370;
+map.createPane('routeFlow'); map.getPane('routeFlow').style.zIndex=380;
+const leafletZooms=[6,6,7,6,6,7,5,6];
+function latlng(c){return [c[1],c[0]]}
+function kindColor(kind){return kind==='japan'?'#b25b47':kind==='result'?'#956f3c':kind==='korea'?'#71805f':'#314f68'}
+function coord(key){return P[key]}
+function asList(items){return '<ul>'+items.map(i=>`<li>${i}</li>`).join('')+'</ul>'}
+function addBaseMarker(name,value){const icon=L.divIcon({className:'',html:`<div class="map-label base"><span class="pin"></span><b>${name}</b></div>`,iconSize:[90,20],iconAnchor:[6,10]});const m=L.marker(latlng(value),{icon,interactive:false,pane:'baseLabels'}).addTo(baseLayer);baseMarkers[name]=m;} 
+function initBasePlaces(){baseLayer.clearLayers();Object.keys(baseMarkers).forEach(k=>delete baseMarkers[k]);[['大沽口',P.Dagu],['漢城',P.Seoul],['仁川',P.Incheon],['牙山灣',P.AsanBay],['平壤',P.Pyongyang],['鴨綠江口',P.YaluMouth],['旅順',P.Lushun],['威海衛',P.Weihai],['劉公島',P.Liugong],['遼東半島',P.Liaodong],['馬關',P.Shimonoseki],['台灣',P.Taiwan],['澎湖',P.Penghu]].forEach(([n,v])=>addBaseMarker(n,v));}
+function updateBasePlaceVisibility(e){const visibleMap={0:['漢城','仁川','牙山灣'],1:['大沽口','漢城','仁川','牙山灣'],2:['大沽口','牙山灣'],3:['平壤','鴨綠江口'],4:['鴨綠江口','旅順','威海衛'],5:['旅順','威海衛','劉公島'],6:['馬關','遼東半島','台灣','澎湖'],7:['大沽口','平壤','威海衛','馬關']};const visible=new Set(visibleMap[active]||[]);Object.entries(baseMarkers).forEach(([name,marker])=>{const el=marker.getElement(); if(!el) return; el.style.display=visible.has(name)?'flex':'none';});}
+function addFocusHalo(value, kind='result'){const icon=L.divIcon({className:'', html:`<div class="focus-ring" style="width:42px;height:42px;color:${kindColor(kind)}"></div>`, iconSize:[42,42], iconAnchor:[21,21]});L.marker(latlng(value),{icon,interactive:false}).addTo(overlayLayer);}
+function lineMeta(name, kind){
+  if(kind==='result') return {type:'result',curve:.06, weight:2.4, glow:.10, flow:false, dash:'4 14', opacity:.58, glyph:'割'};
+  if(/封鎖|包圍|受困/.test(name)) return {type:'blockade',curve:.08, weight:3.2, glow:.16, flow:true, dash:'2 10', opacity:.82, clash:true, glyph:'鎖'};
+  if(/炮戰|接觸|截擊|海戰|最後|沉沒|崩潰/.test(name)) return {type:'clash',curve:.10, weight:3.2, glow:.18, flow:true, dash:'8 14', opacity:.86, clash:true, glyph:'戰'};
+  if(/退卻|退守|失去|返航|轉入被動/.test(name)) return {type:'retreat',curve:.10, weight:3.0, glow:.10, flow:false, dash:'6 14', opacity:.54, retreat:true, glyph:'退'};
+  if(/海|艦隊|聯合|高陞號|運兵|護航|赴|航向|海運/.test(name)) return {type:'action-sea',curve:.18, weight:3.6, glow:.14, flow:true, dash:'14 18', opacity:.82};
+  return {type:'attack',curve:.12, weight:3.8, glow:.13, flow:true, dash:'13 18', opacity:.84, glyph:'進'};
+}
+function addClashPulse(value, kind='result'){const icon=L.divIcon({className:'',html:`<div class="clash-pulse" style="width:30px;height:30px;color:${kindColor(kind)}"></div>`,iconSize:[30,30],iconAnchor:[15,15]});L.marker(value,{icon,interactive:false}).addTo(overlayLayer);}
+function bezierPoints(A,B,curve,sign){const lat1=A[0],lng1=A[1],lat2=B[0],lng2=B[1];const dx=lng2-lng1,dy=lat2-lat1,dist=Math.hypot(dx,dy)||1;const midLng=(lng1+lng2)/2,midLat=(lat1+lat2)/2;const nx=-dy/dist,ny=dx/dist,bend=dist*curve*(sign||1);const cLng=midLng+nx*bend,cLat=midLat+ny*bend;const pts=[];for(let t=0;t<=1.0001;t+=0.05){const lng=(1-t)*(1-t)*lng1+2*(1-t)*t*cLng+t*t*lng2;const lat=(1-t)*(1-t)*lat1+2*(1-t)*t*cLat+t*t*lat2;pts.push([lat,lng]);}return pts;}
+function animatePath(layer, classes, delay=0){setTimeout(()=>{const el=layer.getElement();if(!el)return;const len=el.getTotalLength?el.getTotalLength():240;el.style.setProperty('--route-length',len);el.style.animationDelay=delay+'ms';classes.split(' ').forEach(c=>c&&el.classList.add(c));el.classList.add('run');},50);}
+function markerAllowed(kind){return kind==='korea' || !!layerState[kind];}
+const basePlaceNames=new Set(['漢城','仁川','牙山灣','平壤','鴨綠江口','旅順','威海衛','劉公島','馬關','台灣','澎湖']);
+function addMarker(name,value,kind){if(!markerAllowed(kind)) return; if(basePlaceNames.has(name) && !name.includes('之戰') && !name.includes('陷落') && !name.includes('受創') && !name.includes('主動') && !name.includes('高陞號')) return; const icon=L.divIcon({className:'',html:`<div class="map-label ${kind}"><span class="pin"></span><b>${name}</b></div>`,iconSize:[120,24],iconAnchor:[7,12]});L.marker(latlng(value),{icon,interactive:true}).addTo(overlayLayer).bindTooltip(name,{direction:'top',offset:[0,-10]});if(name.includes('海戰')||name.includes('威海衛之戰')||name.includes('馬關')||name.includes('高陞號')){L.circleMarker(latlng(value),{radius:14,color:kindColor(kind),weight:2,fillColor:kindColor(kind),fillOpacity:.08,interactive:false}).addTo(overlayLayer);}}
+function addLine(a,b,n,kind){if(!markerAllowed(kind)) return;const A=latlng(coord(a)),B=latlng(coord(b));const meta=lineMeta(n,kind);const sign=(kind==='japan'||kind==='result')?1:-1;const pts=bezierPoints(A,B,meta.curve,sign);const baseColor=kindColor(kind);L.polyline(pts,{pane:'routeGlow',color:baseColor,weight:meta.weight+6,opacity:meta.glow,lineCap:'round'}).addTo(overlayLayer);const main=L.polyline(pts,{pane:'routeMain',color:baseColor,weight:meta.weight,opacity:meta.opacity,dashArray:meta.retreat||meta.type==='blockade'||meta.type==='result'?meta.dash:null,lineCap:'round'}).addTo(overlayLayer);animatePath(main,'route-main route-'+meta.type+(meta.retreat?' route-retreat':''),80);if(meta.flow){const flow=L.polyline(pts,{pane:'routeFlow',color:meta.type==='clash'||meta.type==='blockade'?'#e8b06e':'#fff8ec',weight:Math.max(1.8,meta.weight-1.6),opacity:meta.type==='result'?0.35:.78,dashArray:meta.dash,lineCap:'round'}).addTo(overlayLayer);animatePath(flow,'route-flow',240);}const mid=pts[Math.floor(pts.length/2)];if(meta.clash)addClashPulse(mid,kind);if(meta.glyph){const glyph=L.divIcon({className:'',html:`<div class="event-glyph ${meta.type}">${meta.glyph}</div>`,iconSize:[34,34],iconAnchor:[17,17]});L.marker(mid,{icon:glyph,interactive:false}).addTo(overlayLayer);}const showLabel=meta.type!=='result' || /割讓|條約/.test(n);if(showLabel){const icon=L.divIcon({className:'',html:`<div class="route-label ${meta.type}" style="color:${baseColor}">${n}</div>`,iconSize:[150,24],iconAnchor:[75,12]});L.marker(mid,{icon,interactive:false}).addTo(overlayLayer);}const prev=pts[pts.length-2],end=pts[pts.length-1];const angle=Math.atan2(end[0]-prev[0],end[1]-prev[1])*180/Math.PI;if(meta.type!=='result'&&meta.type!=='blockade'){const arr=L.divIcon({className:'',html:`<div class="route-arrow ${kind}" style="transform:rotate(${angle}deg)"></div>`,iconSize:[18,18],iconAnchor:[9,9]});L.marker(end,{icon:arr,interactive:false}).addTo(overlayLayer);}L.circleMarker(B,{radius:meta.clash?6:4,color:baseColor,weight:2,fillColor:'#fffaf0',fillOpacity:.95,interactive:false}).addTo(overlayLayer);}  
+function addResultHalo(value,radius){L.circle(latlng(value),{radius,color:'#956f3c',weight:2,fillColor:'#956f3c',fillOpacity:.13,interactive:false}).addTo(overlayLayer);}
+function addCauseTag(text,value){const icon=L.divIcon({className:'',html:`<div class="cause-tag">${text}</div>`,iconSize:[130,28],iconAnchor:[65,14]});L.marker(latlng(value),{icon,interactive:false}).addTo(overlayLayer);}
+function addResultNote(text,value){const icon=L.divIcon({className:'',html:`<div class="result-map-note">${text}</div>`,iconSize:[180,24],iconAnchor:[90,12]});L.marker(latlng(value),{icon,interactive:false}).addTo(overlayLayer);}
+function addBattleZone(value,label){const zone=L.divIcon({className:'',html:'<div class="battle-zone"></div>',iconSize:[92,92],iconAnchor:[46,46]});L.marker(latlng(value),{icon:zone,interactive:false}).addTo(overlayLayer);if(label)addResultNote(label,value);}
+function addBlockadeZone(value,label){const zone=L.divIcon({className:'',html:'<div class="blockade-zone"></div>',iconSize:[132,82],iconAnchor:[66,55]});L.marker(latlng(value),{icon:zone,interactive:false}).addTo(overlayLayer);if(label)addResultNote(label,value);}
+function addPressureNote(text,value){const icon=L.divIcon({className:'',html:`<div class="pressure-note">${text}</div>`,iconSize:[150,28],iconAnchor:[75,14]});L.marker(latlng(value),{icon,interactive:false}).addTo(overlayLayer);}
+function addFinalSummaryMap(){
+  if(!layerState.result) return;
+  addCauseTag('和戰不定',P.Beijing);
+  addCauseTag('誤信列強',P.Tianjin);
+  addCauseTag('各自為政',P.Weihai);
+  addCauseTag('戰略失當',P.YellowSea);
+  addCauseTag('軍備不足',P.Liugong);
+  addResultNote('戰敗原因總結：最後展開 PEEL', [123.0,34.7]);
+}
+function addSituationOverlay(){
+  if(active===2){addBattleZone(P.Pungdo,'截擊爆發區');addPressureNote('高陞號沉沒',P.Kowshing);}
+  if(active===4){addBattleZone(P.YellowSea,'黃海接戰核心');}
+  if(active===5){addBlockadeZone(P.Liugong,'海陸封鎖圈');}
+}
+function dseLinesFor(index,e){return DSE_LINES[index]||e.lines||[];}
+function dseMarkersFor(index,e){return DSE_MARKERS[index]||e.markers||[];}
+function restartPanelMotion(){const panel=document.querySelector('.panel-inner');if(!panel)return;panel.classList.remove('motion-in');void panel.offsetWidth;panel.classList.add('motion-in');}
+function summaryHtml(text){const parts=text.split('。').map(t=>t.trim()).filter(Boolean);if(parts.length<3)return text;const first=parts.slice(0,2).join('。')+'。';const rest=parts.slice(2).join('。')+'。';return `<span>${first}</span><span>${rest}</span>`;}
+function analysisPeelHtml(item){const roles={P:'開首句',E:'史實／分析',L:'可背誦收結'};const rows=[['P','Point｜論點',item.p],['E','Evidence｜史實',item.e1],['E','Explain｜解釋',item.e2],['L','Link｜扣題',item.l]];return `<div class="reason-kicker">DSE Cause Analysis</div><h3>${item.title}</h3><div class="analysis-peel">${rows.map((r,i)=>`<div class="analysis-peel-row ${r[0]==='L'?'link-row':''}"><div class="analysis-letter">${r[0]}</div><div><div class="analysis-label">${r[1]}<span class="answer-role">${i===2?'分析':roles[r[0]]}</span></div><div class="analysis-text">${r[2]}</div></div></div>`).join('')}</div>`;}
+function renderAnalysisReasons(){const list=document.getElementById('reasonList'),detail=document.getElementById('reasonDetail');if(!list||!detail)return;list.innerHTML=ANALYSIS_REASONS.map((r,i)=>`<button class="reason-card ${i===activeReason?'active':''}" data-reason="${i}"><span class="reason-no">${String(i+1).padStart(2,'0')}</span><span class="reason-title">${r.title}</span><span class="reason-hint">${r.hint}</span></button>`).join('');detail.innerHTML=analysisPeelHtml(ANALYSIS_REASONS[activeReason]);list.querySelectorAll('.reason-card').forEach(btn=>btn.addEventListener('click',()=>{activeReason=Number(btn.dataset.reason);renderAnalysisReasons();}));}
+function setMemoryCardOpen(open){const cue=document.getElementById('studyCue'),toggle=document.getElementById('memoryToggle'),content=document.getElementById('memoryCardContent'),symbol=document.getElementById('memorySymbol');if(!cue||!toggle||!content)return;cue.classList.toggle('open',open);toggle.setAttribute('aria-expanded',open?'true':'false');content.hidden=!open;if(symbol)symbol.textContent=open?'−':'＋';}
+function renderStudyCue(isAnalysis){const cue=document.getElementById('studyCue');if(!cue)return;cue.style.display=isAnalysis?'none':'block';setMemoryCardOpen(false);if(isAnalysis)return;const meta=EVENT_STUDY_META[active]||EVENT_STUDY_META[0];document.getElementById('memoryLine').innerHTML=`<span>記憶句：</span>${meta.memory}`;document.getElementById('keywordRow').innerHTML=meta.keywords.map(k=>`<span class="keyword-chip">${k}</span>`).join('');document.getElementById('examUse').textContent=meta.exam;}
+function showCompletion(){const toast=document.getElementById('completionToast');if(!toast)return;toast.classList.add('show');}
+function hideCompletion(){document.getElementById('completionToast')?.classList.remove('show');}
+
+function render(){if(mapDemoMode) return;const e=events[active];const isAnalysis=active===analysisIndex;const displayLines=dseLinesFor(active,e);const displayMarkers=dseMarkersFor(active,e);const token=++renderToken;overlayLayer.clearLayers();updateUI(e);if(isAnalysis)return;map.flyTo(latlng(e.center),leafletZooms[active]||6,{duration:1.05,easeLinearity:.14});setTimeout(()=>updateBasePlaceVisibility(e),90);setTimeout(()=>{if(token!==renderToken) return; if(e.scene==='result' && layerState.result){addResultHalo(P.Taiwan,160000);addResultHalo(P.Penghu,70000);addResultHalo(P.Liaodong,140000);} displayLines.forEach(([a,b,n,kind],i)=>{setTimeout(()=>{if(token!==renderToken) return; addLine(a,b,n,kind);},i*560);}); const markerDelay=320 + displayLines.length*560; displayMarkers.forEach(([name,value,kind],i)=>{setTimeout(()=>{if(token!==renderToken) return; addMarker(name,value,kind);},markerDelay+i*110);}); setTimeout(()=>{if(token!==renderToken) return; addSituationOverlay();},markerDelay+displayMarkers.length*110+120);},220);} 
+function updateUI(e){restartPanelMotion();const isAnalysis=active===analysisIndex;const hideEventPeel=[1,2,3].includes(active);document.querySelector('.app')?.setAttribute('data-scene',e.scene);document.querySelector('.app')?.classList.toggle('analysis-mode',isAnalysis);document.getElementById('eventNo').textContent=isAnalysis?'ANALYSIS':String(active+1).padStart(2,'0')+' / '+String(timelineEvents.length).padStart(2,'0');document.getElementById('eventTitle').textContent=isAnalysis?'甲午戰敗原因':e.title;document.getElementById('eventDate').textContent=isAnalysis?'五個常見 DSE 論點':e.date;document.getElementById('eventThesis').textContent=isAnalysis?'選擇一個原因，按 PEEL 結構理解「論點、史實、解釋、扣題」。':e.peel?.p||e.meaning;renderStudyCue(isAnalysis);document.getElementById('eventSummary').innerHTML=summaryHtml(e.summary);document.getElementById('eventProcess').innerHTML=asList(e.process);document.getElementById('eventMeaning').innerHTML=peelHtml(e.peel);document.getElementById('warDefeat').innerHTML=peelHtml(e.peel);document.querySelectorAll('.info-accordion').forEach(d=>d.open=false);document.getElementById('accMeaning').style.display=(isAnalysis||hideEventPeel?'none':'block');document.getElementById('accDefeat').style.display=(isAnalysis?'block':'none');document.getElementById('scenePill').textContent=isAnalysis?'戰敗原因':e.sceneName;document.getElementById('mapTitle').textContent=e.mapTitle;document.getElementById('mapCredit').textContent='Cartographic theatre · historical teaching overlay';document.getElementById('timelineProgress').style.width=((Math.min(active,timelineEvents.length-1)+1)/timelineEvents.length*100)+'%';document.querySelectorAll('.tl-node').forEach((n,i)=>{const on=!isAnalysis&&i===active;n.classList.toggle('active',on);n.setAttribute('aria-current',on?'step':'false');});document.querySelectorAll('.stage-tab').forEach(t=>t.classList.toggle('active',!isAnalysis&&t.dataset.stage===e.scene));document.getElementById('analysisTab')?.classList.toggle('active',isAnalysis);if(isAnalysis)renderAnalysisReasons();const db=document.getElementById('demoButton');if(e.demo&&!isAnalysis){db.classList.add('show');db.textContent='啟動 '+e.title+' 戰局導演模式';db.onclick=()=>openDemo(e.demo);}else{db.classList.remove('show');db.onclick=null;}}
+const timelineShortNames=['明治維新','東學黨之亂','豐島海戰','平壤戰役','黃海海戰','威海衛海戰','馬關條約'];
+const timeline=document.getElementById('timeline');timelineEvents.forEach((e,i)=>{const b=document.createElement('button');b.className='tl-node'+(i===0?' active':'');b.title=e.title;b.innerHTML=`<div class="num">${String(i+1).padStart(2,'0')}</div><div class="name">${timelineShortNames[i]||e.title}</div>`;b.onclick=()=>{hideCompletion();active=i;exitDemo(false);render();};timeline.appendChild(b);});
+document.getElementById('prevBtn').onclick=()=>{hideCompletion();active=active===analysisIndex?timelineEvents.length-1:Math.max(0,active-1);render()};document.getElementById('nextBtn').onclick=()=>{hideCompletion();if(active>=timelineEvents.length-1){showCompletion();return;}active=Math.min(timelineEvents.length-1,active+1);render()};
+document.getElementById('autoBtn').onclick=()=>{const btn=document.getElementById('autoBtn');if(timelineTimer){clearInterval(timelineTimer);timelineTimer=null;btn.textContent='自動播放';return;}hideCompletion();if(active===analysisIndex)active=0;btn.textContent='暫停播放';timelineTimer=setInterval(()=>{if(active>=timelineEvents.length-1){clearInterval(timelineTimer);timelineTimer=null;btn.textContent='自動播放';showCompletion();return;}active++;render();},4800);render();};
+[['toggleQing','qing'],['toggleJapan','japan'],['toggleResult','result']].forEach(([id,key])=>{const el=document.getElementById(id); if(!el) return; el.onclick=()=>{layerState[key]=!layerState[key];el.classList.toggle('active',layerState[key]); if(mapDemoMode) renderMapDemo(); else render();};});
+document.getElementById('analysisTab')?.addEventListener('click',()=>{hideCompletion();active=analysisIndex;exitDemo(false);render();});
+document.querySelectorAll('.stage-tab').forEach(t=>t.onclick=()=>{hideCompletion();const idx=events.findIndex(e=>e.scene===t.dataset.stage);if(idx>=0){active=idx;render();}});
+document.getElementById('completionAnalysis')?.addEventListener('click',()=>{hideCompletion();active=analysisIndex;exitDemo(false);render();});
+document.getElementById('completionClose')?.addEventListener('click',hideCompletion);
+window.addEventListener('resize',()=>setTimeout(()=>map.invalidateSize(),100));
+const mapDemos={
+ yellow:{title:'黃海海戰',center:[124.45,38.9],zoom:7,steps:[
+  {title:'雙方艦隊在黃海北部接觸',copy:'北洋艦隊護送援軍至鴨綠江口後，與日本聯合艦隊在黃海北部相遇。',markers:[['鴨綠江口',P.YaluMouth,'qing'],['北洋艦隊',P.YellowQing,'qing'],['日本聯合艦隊',P.YellowJapan,'japan']],focus:[P.YellowSea,'result'],lines:[['YaluMouth','YellowQing','北洋艦隊返航','qing'],['JapanSea','YellowJapan','日本艦隊接近','japan']]},
+  {title:'日本艦隊主動機動',copy:'日本艦隊以較高機動性調整航向，尋找有利攻擊位置。',markers:[['北洋艦隊',P.YellowQing,'qing'],['日艦機動',P.YellowJapan,'japan'],['黃海接戰區',P.YellowSea,'japan']],focus:[P.YellowSea,'japan'],lines:[['YellowJapan','YellowSea','日艦轉向接戰','japan'],['YellowQing','YellowSea','北洋艦隊應戰','qing']]},
+  {title:'雙方激烈炮戰',copy:'雙方展開炮戰；北洋艦隊有定遠、鎮遠等主力艦，但火力、彈藥與協同未能充分發揮。',markers:[['接戰核心',P.YellowSea,'japan'],['定遠・鎮遠方向',P.YellowQing,'qing']],focus:[P.YellowSea,'result'],lines:[['YellowQing','YellowJapan','炮戰接觸','result'],['YellowJapan','YellowQing','反向炮火','japan']]},
+  {title:'北洋艦隊受創，主動權轉移',copy:'北洋艦隊未即時覆滅，但多艦受損，戰後行動趨於保守，日本逐漸取得海上主動權。',markers:[['北洋艦隊受創',P.YellowQing,'qing'],['日本取得主動',P.YellowJapan,'japan'],['威海衛退守方向',P.Weihai,'qing']],focus:[P.Weihai,'qing'],lines:[['YellowQing','Weihai','北洋艦隊退守','qing'],['YellowJapan','YellowSea','日方主動權','japan']]},
+  {title:'歷史意義',copy:'黃海海戰說明清朝有新式軍艦，但未建立完整的現代海軍制度、訓練、彈藥與指揮支援。',markers:[['黃海海戰',P.YellowSea,'japan'],['威海衛',P.Weihai,'qing'],['旅順',P.Lushun,'qing']],focus:[P.YellowSea,'result'],lines:[['YellowSea','Weihai','海防轉入被動','qing'],['YellowSea','Lushun','遼東壓力上升','japan']]}
+ ]},
+ weihai:{title:'威海衛之戰',center:[122.23,37.55],zoom:9,steps:[
+  {title:'北洋艦隊退守威海衛',copy:'黃海海戰後，北洋艦隊逐步退守威海衛及劉公島一帶。',markers:[['威海衛',P.Weihai,'qing'],['劉公島',P.Liugong,'qing'],['北洋艦隊基地',P.WeihaiSea,'qing']],focus:[P.Weihai,'qing'],lines:[['WeihaiSea','Liugong','艦隊依港防守','qing']]},
+  {title:'日軍逼近山東半島',copy:'日軍由海上逼近威海衛，同時準備陸上攻勢，壓縮北洋艦隊活動空間。',markers:[['日軍外圍艦隊',P.WeihaiSea,'japan'],['威海衛',P.Weihai,'qing'],['榮成方向',P.Rongcheng,'japan']],focus:[P.Rongcheng,'japan'],lines:[['Lushun','WeihaiSea','日軍轉向山東','japan'],['Rongcheng','Weihai','陸上進攻方向','japan']]},
+  {title:'海陸夾擊形成包圍',copy:'日軍從海上封鎖港口，又從陸上進攻炮台，使北洋艦隊陷入孤立。',markers:[['海上封鎖',P.WeihaiSea,'japan'],['陸上進攻',P.Rongcheng,'japan'],['劉公島',P.Liugong,'qing']],focus:[P.Liugong,'result'],lines:[['WeihaiSea','Liugong','海上封鎖','japan'],['Rongcheng','Weihai','陸上壓迫','japan'],['Weihai','Liugong','清軍受困','qing']]},
+  {title:'北洋艦隊失去反擊能力',copy:'北洋艦隊被困基地，難以有效突圍或反擊，威海衛戰局迅速惡化。',markers:[['受困艦隊',P.Liugong,'qing'],['日軍封鎖線',P.WeihaiSea,'japan']],focus:[P.Liugong,'qing'],lines:[['WeihaiSea','Liugong','封鎖收緊','japan'],['Liugong','Weihai','退守港內','qing']]},
+  {title:'北洋艦隊覆滅',copy:'威海衛之戰後，北洋艦隊覆滅，象徵洋務海防建設未能通過現代戰爭考驗。',markers:[['北洋艦隊覆滅',P.Liugong,'qing'],['威海衛失守',P.Weihai,'japan']],focus:[P.Liugong,'result'],lines:[['WeihaiSea','Liugong','最後封鎖','japan'],['Liugong','Weihai','海防崩潰','qing']]}
+ ]}
+};
+let mapDemoMode=false,currentDemo=null,demoStep=0,demoTimer=null;
+function openDemo(type){mapDemoMode=true;currentDemo=type;demoStep=0;document.querySelector('.app').classList.add('demo-map-mode');Object.values(baseMarkers).forEach(m=>{const el=m.getElement(); if(el) el.style.display='none';});document.getElementById('mapDemoBar').classList.remove('hidden');document.getElementById('mapDemoCaption').classList.remove('hidden');setTimeout(()=>map.invalidateSize(),80);renderMapDemo();}
+function exitDemo(shouldRender=true){if(demoTimer){clearInterval(demoTimer);demoTimer=null;document.getElementById('mapDemoPlay').textContent='自動播放';}if(!mapDemoMode)return;mapDemoMode=false;currentDemo=null;document.querySelector('.app').classList.remove('demo-map-mode');document.getElementById('mapDemoBar').classList.add('hidden');document.getElementById('mapDemoCaption').classList.add('hidden');setTimeout(()=>map.invalidateSize(),80);if(shouldRender) setTimeout(render,120);}
+function renderMapDemo(){const demo=mapDemos[currentDemo], step=demo.steps[demoStep];const token=++renderToken;overlayLayer.clearLayers();map.flyTo(latlng(demo.center),demo.zoom,{duration:1.05,easeLinearity:.14});setTimeout(()=>{if(token!==renderToken) return; if(step.focus) addFocusHalo(step.focus[0], step.focus[1]); step.lines.forEach(([a,b,n,kind],i)=>{setTimeout(()=>{if(token!==renderToken) return; addLine(a,b,n,kind);},i*700);}); const markerDelay=360+step.lines.length*700; step.markers.forEach(([name,value,kind],i)=>{setTimeout(()=>{if(token!==renderToken) return; addMarker(name,value,kind);},markerDelay+i*150);});},240);document.getElementById('mapDemoStep').textContent='STEP '+(demoStep+1)+' / '+demo.steps.length;document.getElementById('mapDemoTitle').textContent=demo.title+'｜'+step.title;document.getElementById('mapDemoCopy').textContent=step.copy;document.getElementById('mapDemoProgressFill').style.width=((demoStep+1)/demo.steps.length*100)+'%';document.getElementById('mapDemoPrev').disabled=demoStep===0;document.getElementById('mapDemoNext').disabled=demoStep===demo.steps.length-1;document.getElementById('scenePill').textContent='戰況演示';document.getElementById('mapTitle').textContent='Focus → Trace → Mark → Settle';} 
+document.getElementById('mapDemoPrev').onclick=()=>{demoStep=Math.max(0,demoStep-1);renderMapDemo()};
+document.getElementById('mapDemoNext').onclick=()=>{const len=mapDemos[currentDemo].steps.length;demoStep=Math.min(len-1,demoStep+1);renderMapDemo()};
+document.getElementById('mapDemoPlay').onclick=()=>{if(demoTimer){clearInterval(demoTimer);demoTimer=null;document.getElementById('mapDemoPlay').textContent='自動播放';return;}document.getElementById('mapDemoPlay').textContent='暫停';demoTimer=setInterval(()=>{const len=mapDemos[currentDemo].steps.length;if(demoStep>=len-1){clearInterval(demoTimer);demoTimer=null;document.getElementById('mapDemoPlay').textContent='自動播放';return;}demoStep++;renderMapDemo();},4200)};
+document.getElementById('mapDemoClose').onclick=()=>exitDemo(true);
+// Legacy modal functions are intentionally disabled; demos now run directly on the real map.
+document.getElementById('demoOverlay')?.classList.add('hidden');
+document.getElementById('memoryToggle')?.addEventListener('click',()=>{const open=document.getElementById('memoryToggle')?.getAttribute('aria-expanded')==='true';setMemoryCardOpen(!open);});
+document.querySelectorAll('.info-accordion').forEach(el=>el.addEventListener('toggle',()=>{if(el.open){document.querySelectorAll('.info-accordion').forEach(other=>{if(other!==el) other.open=false;}); el.scrollIntoView({block:'nearest',behavior:'smooth'});}}));
+
+document.getElementById('panelToggle')?.addEventListener('click',()=>{document.querySelector('.app').classList.toggle('drawer-collapsed');setTimeout(()=>map.invalidateSize(),320);});
+document.getElementById('introStart')?.addEventListener('click',()=>{document.getElementById('introOverlay').classList.add('hidden');setTimeout(()=>map.invalidateSize(),320);});
+document.getElementById('introOverlay')?.addEventListener('click',e=>{if(e.target.id==='introOverlay'){document.getElementById('introOverlay').classList.add('hidden');setTimeout(()=>map.invalidateSize(),320);}});
+
+initBasePlaces();
+render();setTimeout(()=>map.invalidateSize(),250);
+</script>
+</body>
+</html>
